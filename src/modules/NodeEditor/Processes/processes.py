@@ -23,94 +23,46 @@ class AvailableProcesses(list):
 
 class Addition(Process):
 
-    def __init__(self, node_name):
+    def __init__(self):
         super(Addition, self).__init__()
 
-        self.node_name = node_name
-
-        self.add_trait(node_name + "_in_1", Float(output=False))
-        self.add_trait(node_name + "_in_2", Float(output=False))
-        self.add_trait(node_name + "_out", Float(output=True))
-
-        self.in_1 = getattr(self, node_name + "_in_1")
-        self.in_2 = getattr(self, node_name + "_in_2")
-        self.out = getattr(self, node_name + "_out")
+        self.add_trait("in_1", Float(output=False))
+        self.add_trait("in_2", Float(output=False))
+        self.add_trait("out", Float(output=True))
 
     def _run_process(self):
-        self.get_plugs_values()
-
         self.out = self.in_1 + self.in_2
-        print('Addition - ', self.node_name, '\n...\nInputs: {', self.in_1, ', ',
+        print('Addition\n...\nInputs: {', self.in_1, ', ',
               self.in_2, '}\nOutput: ', self.out, '\n...\n')
-
-        self.set_plugs_values()
-
-    def get_plugs_values(self):
-        self.in_1 = getattr(self, self.node_name + "_in_1")
-        self.in_2 = getattr(self, self.node_name + "_in_2")
-        self.out = getattr(self, self.node_name + "_out")
-
-    def set_plugs_values(self):
-        setattr(self, self.node_name + "_in_1", self.in_1)
-        setattr(self, self.node_name + "_in_2", self.in_2)
-        setattr(self, self.node_name + "_out", self.out)
 
 
 class Substraction(Process):
 
-    def __init__(self, node_name):
+    def __init__(self):
         super(Substraction, self).__init__()
 
-        self.node_name = node_name
-
-        self.add_trait(node_name + "_in_1", Float(output=False))
-        self.add_trait(node_name + "_in_2", Float(output=False))
-        self.add_trait(node_name + "_out", Float(output=True))
-
-        self.in_1 = getattr(self, node_name + "_in_1")
-        self.in_2 = getattr(self, node_name + "_in_2")
-        self.out = getattr(self, node_name + "_out")
+        self.add_trait("in_1", Float(output=False))
+        self.add_trait("in_2", Float(output=False))
+        self.add_trait("out", Float(output=True))
 
     def _run_process(self):
-        self.get_plugs_values()
-
         self.out = self.in_1 - self.in_2
-        print('Substraction - ', self.node_name, '\n...\nInputs: {', self.in_1, ', ',
+        print('Substraction\n...\nInputs: {', self.in_1, ', ',
               self.in_2, '}\nOutput: ', self.out, '\n...\n')
-
-        self.set_plugs_values()
-
-    def get_plugs_values(self):
-        self.in_1 = getattr(self, self.node_name + "_in_1")
-        self.in_2 = getattr(self, self.node_name + "_in_2")
-        self.out = getattr(self, self.node_name + "_out")
-
-    def set_plugs_values(self):
-        setattr(self, self.node_name + "_in_1", self.in_1)
-        setattr(self, self.node_name + "_in_2", self.in_2)
-        setattr(self, self.node_name + "_out", self.out)
 
 
 class FSL_Smooth(Process):
 
-    def __init__(self, node_name):
+    def __init__(self):
         super(FSL_Smooth, self).__init__()
 
 
-        self.node_name = node_name
-
-        self.add_trait(node_name + "_in_file", File(output=False))
-        self.add_trait(node_name + "_fwhm", Float(output=False))
+        self.add_trait("in_file", File(output=False))
+        self.add_trait("fwhm", Float(output=False))
         #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
-        self.add_trait(node_name + "_out_file", File(output=True))
-
-        self.in_file = getattr(self, self.node_name + "_in_file")
-        self.fwhm = getattr(self, self.node_name + "_fwhm")
-        #self.sigma = getattr(self, self.node_name + "_sigma")
-        self.out_file = getattr(self, self.node_name + "_out_file")
+        self.add_trait("out_file", File(output=True))
 
     def _run_process(self):
-        self.get_plugs_values()
 
         study_config = StudyConfig(modules=StudyConfig.default_modules + ['NipypeConfig'])
 
@@ -119,9 +71,7 @@ class FSL_Smooth(Process):
             try:
                 smooth_process = get_process_instance("nipype.interfaces.fsl.Smooth")
                 smooth_process.output_type = 'NIFTI'
-                print(self.in_file)
                 smooth_process.in_file = self.in_file
-                print(smooth_process.in_file)
                 #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
                 if self.fwhm > 0:
                     smooth_process.fwhm = self.fwhm
@@ -129,10 +79,9 @@ class FSL_Smooth(Process):
                     smooth_process.sigma = self.sigma
                 else:
                     smooth_process.fwhm = 2.0
-                print(os.path.split(self.out_file)[0])
+
                 smooth_process.output_directory = os.path.split(self.out_file)[0]
-                print(smooth_process.output_directory)
-                #smooth_process.output_directory = '/home/david/Nifti_data'
+                #smooth_process.output_directory = '/home/david/Nifti_data/'
 
             except:
                 smooth_process = None
@@ -147,30 +96,16 @@ class FSL_Smooth(Process):
             study_config.run(smooth_process, verbose=1)
 
             # Display
-            print('Smoothing with FSL - ', self.node_name, '\n...\nInputs: {', self.in_file, ', ',
+            print('Smoothing with FSL\n...\nInputs: {', self.in_file, ', ',
                   self.fwhm, '}\nOutput: ', self.out_file, '\n...\n')
 
             import subprocess
             #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
             #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])
             out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
-            print(out_file)
             subprocess.check_output(['fslview', self.in_file])
             subprocess.check_output(['fslview', out_file])
 
-        self.set_plugs_values()
-
-    def get_plugs_values(self):
-        self.in_file = getattr(self, self.node_name + "_in_file")
-        self.fwhm = getattr(self, self.node_name + "_fwhm")
-        #self.sigma = getattr(self, self.node_name + "_sigma")
-        self.out_file = getattr(self, self.node_name + "_out_file")
-
-    def set_plugs_values(self):
-        setattr(self, self.node_name + "_in_file", self.in_file)
-        setattr(self, self.node_name + "_fwhm", self.fwhm)
-        #setattr(self, self.node_name + "_sigma", self.sigma)
-        setattr(self, self.node_name + "_out_file", self.out_file)
 
 '''
 class FSL_Smooth(Process):
