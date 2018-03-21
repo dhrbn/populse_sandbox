@@ -6,7 +6,7 @@ from traits.api import Float
 
 
 class AvailableProcesses(list):
-    # List of all the processes in this file
+    # List of all the Processes in this file
     def __init__(self):
         super(AvailableProcesses, self).__init__()
         self.append(Addition)
