@@ -19,6 +19,7 @@ class AvailableProcesses(list):
         self.append(Addition)
         self.append(Substraction)
         self.append(FSL_Smooth)
+        self.append(SPM_Smooth)
 
 
 class Addition(Process):
@@ -105,6 +106,59 @@ class FSL_Smooth(Process):
             out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
             subprocess.check_output(['fslview', self.in_file])
             subprocess.check_output(['fslview', out_file])
+
+
+
+class SPM_Smooth(Process):
+
+    def __init__(self):
+        super(SPM_Smooth, self).__init__()
+
+
+        self.add_trait("in_files", File(output=False))
+        self.add_trait("fwhm", Float(output=False))
+        #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
+        self.add_trait("out_file", File(output=True))
+
+    def _run_process(self):
+
+        study_config = StudyConfig(modules=StudyConfig.default_modules + ['NipypeConfig'])
+
+        # Process
+        if study_config.use_nipype:
+            try:
+                smooth_process = get_process_instance("nipype.interfaces.spm.Smooth")
+                #smooth_process.output_type = 'NIFTI'
+                smooth_process.in_files = self.in_files
+                #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
+                smooth_process.fwhm = self.fwhm
+                smooth_process.output_directory = os.path.split(self.out_file)[0]
+                #smooth_process.output_directory = '/home/david/Nifti_data/'
+
+            except:
+                smooth_process = None
+                print('Smooth module of SPM is not present.')
+
+        else:
+            smooth_process = None
+            print('NiPype is not present.')
+
+        if smooth_process:
+            study_config.reset_process_counter()
+            study_config.run(smooth_process, verbose=1)
+
+            # Display
+            print('Smoothing with SPM\n...\nInputs: {', self.in_file, ', ',
+                  self.fwhm, '}\nOutput: ', self.out_file, '\n...\n')
+
+            #import subprocess
+            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
+            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])
+            """out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
+            subprocess.check_output(['fslview', self.in_file])
+            subprocess.check_output(['fslview', out_file])"""
+
+
 
 
 '''
