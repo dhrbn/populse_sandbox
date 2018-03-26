@@ -65,6 +65,7 @@ class FSL_Smooth(Process):
 
     def _run_process(self):
 
+        import subprocess
         study_config = StudyConfig(modules=StudyConfig.default_modules + ['NipypeConfig'])
 
         # Process
@@ -73,6 +74,10 @@ class FSL_Smooth(Process):
                 smooth_process = get_process_instance("nipype.interfaces.fsl.Smooth")
                 smooth_process.output_type = 'NIFTI'
                 smooth_process.in_file = self.in_file
+
+                # To resolve the sform/qform bug
+                subprocess.check_output(['fslorient', '-deleteorient', '1', self.in_file])
+                subprocess.check_output(['fslorient', '-setqformcode', '1', self.in_file])
                 #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
                 if self.fwhm > 0:
                     smooth_process.fwhm = self.fwhm
@@ -100,10 +105,15 @@ class FSL_Smooth(Process):
             print('Smoothing with FSL\n...\nInputs: {', self.in_file, ', ',
                   self.fwhm, '}\nOutput: ', self.out_file, '\n...\n')
 
-            import subprocess
+
             #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
             #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])
             out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
+
+            #To resolve the sform/qform bug
+            subprocess.check_output(['fslorient', '-deleteorient', '1', out_file])
+            subprocess.check_output(['fslorient', '-setqformcode', '1', out_file])
+
             subprocess.check_output(['fslview', self.in_file])
             subprocess.check_output(['fslview', out_file])
 
@@ -126,26 +136,45 @@ class SPM_Smooth(Process):
 
         # Process
         if study_config.use_nipype:
-            try:
-                smooth_process = get_process_instance("nipype.interfaces.spm.Smooth")
-                #smooth_process.output_type = 'NIFTI'
-                smooth_process.in_files = self.in_files
-                #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
-                smooth_process.fwhm = self.fwhm
-                smooth_process.output_directory = os.path.split(self.out_file)[0]
-                #smooth_process.output_directory = '/home/david/Nifti_data/'
+            #try:
+            from nipype.interfaces import spm
+            print('COUCOU')
+            matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
+            #matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/'
+            spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+            print('SALUT')
+            spm.SPMCommand().version
+            print('YOSSS')
 
-            except:
-                smooth_process = None
-                print('Smooth module of SPM is not present.')
+            """smooth_process = get_process_instance(spm.Smooth)
+            #smooth_process = get_process_instance("nipype.interfaces.spm.Smooth")
+            #smooth_process.output_type = 'NIFTI'
+            smooth_process.in_files = self.in_files
+            #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
+            smooth_process.fwhm = self.fwhm
+            smooth_process.output_directory = os.path.split(self.out_file)[0]
+            #smooth_process.output_directory = '/home/david/Nifti_data/'"""
+
+            smooth_process = spm.Smooth()
+            smooth_process.inputs.in_files = self.in_files
+            smooth_process.inputs.fwhm = self.fwhm
+            #smooth_process.inputs.out_file = self.out_file
+            smooth_process.run()
+
+
+
+            #except:
+            #    smooth_process = None
+            #    print('Smooth module of SPM is not present.')
 
         else:
             smooth_process = None
             print('NiPype is not present.')
 
-        if smooth_process:
+        """if smooth_process:
             study_config.reset_process_counter()
             study_config.run(smooth_process, verbose=1)
+            print('YOSSSSSSSSSSSSSSSS')
 
             # Display
             print('Smoothing with SPM\n...\nInputs: {', self.in_file, ', ',
@@ -153,10 +182,7 @@ class SPM_Smooth(Process):
 
             #import subprocess
             #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
-            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])
-            """out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
-            subprocess.check_output(['fslview', self.in_file])
-            subprocess.check_output(['fslview', out_file])"""
+            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])"""
 
 
 
