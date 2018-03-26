@@ -70,7 +70,8 @@ class FSL_Smooth(Process):
 
         # Process
         if study_config.use_nipype:
-            try:
+            #try:
+            if study_config.use_nipype:
                 smooth_process = get_process_instance("nipype.interfaces.fsl.Smooth")
                 smooth_process.output_type = 'NIFTI'
                 smooth_process.in_file = self.in_file
@@ -89,9 +90,9 @@ class FSL_Smooth(Process):
                 smooth_process.output_directory = os.path.split(self.out_file)[0]
                 #smooth_process.output_directory = '/home/david/Nifti_data/'
 
-            except:
+            """except:
                 smooth_process = None
-                print('Smooth module of FSL is not present.')
+                print('Smooth module of FSL is not present.')"""
 
         else:
             smooth_process = None
