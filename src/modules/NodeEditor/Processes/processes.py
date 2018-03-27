@@ -77,9 +77,9 @@ class FSL_Smooth(Process):
                 smooth_process.in_file = self.in_file
 
                 # To resolve the sform/qform bug
-                subprocess.check_output(['fslorient', '-deleteorient', '1', self.in_file])
-                subprocess.check_output(['fslorient', '-setqformcode', '1', self.in_file])
-                #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
+                #subprocess.check_output(['fslorient', '-deleteorient', '1', self.in_file])
+                #subprocess.check_output(['fslorient', '-setqformcode', '1', self.in_file])
+
                 if self.fwhm > 0:
                     smooth_process.fwhm = self.fwhm
                 elif self.sigma > 0:
@@ -112,8 +112,8 @@ class FSL_Smooth(Process):
             out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
 
             #To resolve the sform/qform bug
-            subprocess.check_output(['fslorient', '-deleteorient', '1', out_file])
-            subprocess.check_output(['fslorient', '-setqformcode', '1', out_file])
+            #subprocess.check_output(['fslorient', '-deleteorient', '1', out_file])
+            #subprocess.check_output(['fslorient', '-setqformcode', '1', out_file])
 
             subprocess.check_output(['fslview', self.in_file])
             subprocess.check_output(['fslview', out_file])
