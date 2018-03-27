@@ -139,13 +139,10 @@ class SPM_Smooth(Process):
         if study_config.use_nipype:
             #try:
             from nipype.interfaces import spm
-            print('COUCOU')
             matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
             #matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/'
             spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
-            print('SALUT')
             spm.SPMCommand().version
-            print('YOSSS')
 
             """smooth_process = get_process_instance(spm.Smooth)
             #smooth_process = get_process_instance("nipype.interfaces.spm.Smooth")
@@ -154,11 +151,15 @@ class SPM_Smooth(Process):
             #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
             smooth_process.fwhm = self.fwhm
             smooth_process.output_directory = os.path.split(self.out_file)[0]
-            #smooth_process.output_directory = '/home/david/Nifti_data/'"""
+            if smooth_process:
+                study_config.reset_process_counter()
+                study_config.run(smooth_process, verbose=1)"""
 
             smooth_process = spm.Smooth()
             smooth_process.inputs.in_files = self.in_files
             smooth_process.inputs.fwhm = self.fwhm
+            smooth_process.inputs.out_prefix = "SMOOTH"
+            print(smooth_process.inputs)
             #smooth_process.inputs.out_file = self.out_file
             smooth_process.run()
 
