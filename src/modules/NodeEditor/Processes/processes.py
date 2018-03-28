@@ -1,9 +1,6 @@
 # Capsul import
 from capsul.api import Process
 from capsul.api import StudyConfig, get_process_instance
-from capsul.subprocess import fsl
-from soma.path import find_in_path
-from nilearn.plotting import plot_anat, show
 
 # Trait import
 from traits.api import Float, File
