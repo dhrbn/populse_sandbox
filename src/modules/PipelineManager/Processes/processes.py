@@ -116,6 +116,95 @@ class FSL_Smooth(Process):
             subprocess.check_output(['fslview', out_file])
 
 
+class Smooth(Process):
+
+    in_file = File(optional=False, output=False)
+    fwhm = Float(optional=False, output=False)
+    out_file = File(optional=False, output=True)
+
+    def _run_process(self):
+        from capsul.subprocess import fsl
+        #fsl.check_call(self.study_config, ['smooth', self.in_file, self.fwhm, self.out_file])
+        #fsl.check_call(self.study_config, [self.in_file, "-s", self.fwhm, self.out_file])
+
+        import subprocess
+        subprocess.call(["fslmaths", self.in_file, "-s", str(self.fwhm), self.out_file])
+
+
+class FSL_Smooth_Real(Process):
+
+
+    def __init__(self):
+        super(FSL_Smooth_Real, self).__init__()
+
+        self.add_trait("in_file", File(output=False))
+        self.add_trait("fwhm", Float(output=False))
+        #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
+        self.add_trait("out_file", File(output=True))
+
+    def _run_process(self):
+
+        import subprocess
+        study_config = StudyConfig(
+            modules=["FSLConfig"],
+            use_fsl=True,
+            fsl_config="/usr/share/fsl/5.0/etc/fslconf/fsl.sh",
+            use_smart_caching=True,
+            output_directory="/tmp/capsul_demo")
+        #study_config = StudyConfig(modules=StudyConfig.default_modules + ['NipypeConfig'])
+
+        # Process
+        if study_config.use_fsl:
+            smooth_process = get_process_instance(Smooth)
+            #smooth_process.output_type = 'NIFTI'
+            smooth_process.in_file = self.in_file
+            smooth_process.out_file = self.out_file
+            #smooth_process.output_directory = "/tmp/capsul_demo"
+            smooth_process.output_type = 'NIFTI'
+
+            # To resolve the sform/qform bug
+            #subprocess.check_output(['fslorient', '-deleteorient', '1', self.in_file])
+            #subprocess.check_output(['fslorient', '-setqformcode', '1', self.in_file])
+
+            if self.fwhm > 0:
+                smooth_process.fwhm = self.fwhm
+            else:
+                smooth_process.fwhm = 2.0
+
+            smooth_process.output_directory = os.path.split(self.out_file)[0]
+            #smooth_process.output_directory = '/home/david/Nifti_data/'
+
+            """except:
+                smooth_process = None
+                print('Smooth module of FSL is not present.')"""
+
+        else:
+            smooth_process = None
+            print('NiPype is not present.')
+
+        if smooth_process:
+            study_config.reset_process_counter()
+            study_config.run(smooth_process, verbose=1)
+
+            subprocess.call(["fslchfiletype", "NIFTI", self.out_file])
+
+            # Display
+            print('Smoothing with FSL\n...\nInputs: {', self.in_file, ', ',
+                  self.fwhm, '}\nOutput: ', self.out_file, '\n...\n')
+
+
+            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
+            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])
+            #out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
+            out_file = self.out_file
+
+            #To resolve the sform/qform bug
+            #subprocess.check_output(['fslorient', '-deleteorient', '1', out_file])
+            #subprocess.check_output(['fslorient', '-setqformcode', '1', out_file])
+
+            subprocess.check_output(['fslview', self.in_file])
+            subprocess.check_output(['fslview', out_file])
+
 
 class SPM_Smooth(Process):
 
