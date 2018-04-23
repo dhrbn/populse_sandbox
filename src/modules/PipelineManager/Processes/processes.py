@@ -186,7 +186,7 @@ class FSL_Smooth_Real(Process):
             study_config.reset_process_counter()
             study_config.run(smooth_process, verbose=1)
 
-            subprocess.check_output(["fslchfiletype", "NIFTI", self.out_file])
+            subprocess.check_output(["fslchfiletype", "NIFTI", self.out_file + ".gz", self.out_file])
 
             # Display
             print('Smoothing with FSL\n...\nInputs: {', self.in_file, ', ',
