@@ -207,7 +207,7 @@ class FSL_Smooth_Real(Process):
             #subprocess.check_output(['fslorient', '-setqformcode', '1', out_file])
 
             #subprocess.check_output(['fslview', self.in_file])
-            "subprocess.check_output(['fslview', out_file])
+            #subprocess.check_output(['fslview', out_file])
 
 
 class SPM_Smooth(Process):
