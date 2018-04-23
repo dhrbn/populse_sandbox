@@ -186,7 +186,11 @@ class FSL_Smooth_Real(Process):
             study_config.reset_process_counter()
             study_config.run(smooth_process, verbose=1)
 
-            subprocess.check_output(["fslchfiletype", "NIFTI", self.out_file + ".gz", self.out_file])
+            #subprocess.check_output(["fslchfiletype", "NIFTI", self.out_file + ".gz", self.out_file])
+
+            import nibabel as nib
+            img = nib.load(self.out_file + ".gz")
+            nib.save(img, self.out_file)
 
             # Display
             print('Smoothing with FSL\n...\nInputs: {', self.in_file, ', ',
@@ -196,14 +200,14 @@ class FSL_Smooth_Real(Process):
             #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
             #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])
             #out_file = os.path.join(smooth_process.output_directory, os.path.basename(self.in_file)[:-4] + '_smooth.nii')
-            out_file = self.out_file
+            #out_file = self.out_file
 
             #To resolve the sform/qform bug
             #subprocess.check_output(['fslorient', '-deleteorient', '1', out_file])
             #subprocess.check_output(['fslorient', '-setqformcode', '1', out_file])
 
-            subprocess.check_output(['fslview', self.in_file])
-            subprocess.check_output(['fslview', out_file])
+            #subprocess.check_output(['fslview', self.in_file])
+            "subprocess.check_output(['fslview', out_file])
 
 
 class SPM_Smooth(Process):
