@@ -76,9 +76,11 @@ class FSL_Smooth(Process):
                 # To resolve the sform/qform bug
                 #subprocess.check_output(['fslorient', '-deleteorient', '1', self.in_file])
                 #subprocess.check_output(['fslorient', '-setqformcode', '1', self.in_file])
+                print("FWHM:", self.fwhm)
 
                 if self.fwhm > 0:
-                    smooth_process.fwhm = self.fwhm
+                    smooth_process.sigma = self.fwhm / 2.355
+                    #smooth_process.fwhm = self.fwhm
                 elif self.sigma > 0:
                     smooth_process.sigma = self.sigma
                 else:
