@@ -4,9 +4,16 @@ from capsul.api import StudyConfig, get_process_instance
 
 # Trait import
 from traits.api import Float, File
+from nipype.interfaces.base import OutputMultiPath, TraitedSpec, isdefined, InputMultiPath, File, Str, traits
+from nipype.interfaces.spm.base import ImageFileSPM
 
 # Other imports
 import os
+
+from nipype.interfaces import spm
+
+matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
+spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
 
 class AvailableProcesses(list):
@@ -76,9 +83,11 @@ class FSL_Smooth(Process):
                 # To resolve the sform/qform bug
                 #subprocess.check_output(['fslorient', '-deleteorient', '1', self.in_file])
                 #subprocess.check_output(['fslorient', '-setqformcode', '1', self.in_file])
+                print("FWHM:", self.fwhm)
 
                 if self.fwhm > 0:
-                    smooth_process.fwhm = self.fwhm
+                    smooth_process.sigma = self.fwhm / 2.355
+                    #smooth_process.fwhm = self.fwhm
                 elif self.sigma > 0:
                     smooth_process.sigma = self.sigma
                 else:
@@ -215,68 +224,178 @@ class SPM_Smooth(Process):
     def __init__(self):
         super(SPM_Smooth, self).__init__()
 
+        self.add_trait("in_files", InputMultiPath(ImageFileSPM(), copyfile=False, output=False))
+        self.add_trait("fwhm", traits.List(traits.Float, output=False, optional=True))
+        self.add_trait("data_type", traits.Int(output=False, optional=True))
+        self.add_trait("implicit_masking", traits.Bool(output=False, optional=True))
+        self.add_trait("out_prefix", traits.String('s', usedefault=True, output=False, optional=True))
 
-        self.add_trait("in_files", File(output=False))
-        self.add_trait("fwhm", Float(output=False))
-        #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
-        self.add_trait("out_file", File(output=True))
+        self.add_trait("smoothed_files", OutputMultiPath(File(), output=True))
 
     def _run_process(self):
 
-        study_config = StudyConfig(modules=StudyConfig.default_modules + ['NipypeConfig'])
+        seg = spm.Smooth()
+        seg.inputs.in_files = self.in_files
+        seg.inputs.fwhm = self.fwhm
+        seg.inputs.data_type = self.data_type
+        seg.inputs.implicit_masking = self.implicit_masking
+        seg.inputs.out_prefix = self.out_prefix
 
-        # Process
-        if study_config.use_nipype:
-            #try:
-            from nipype.interfaces import spm
-            matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
-            #matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/'
-            spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
-            spm.SPMCommand().version
-
-            """smooth_process = get_process_instance(spm.Smooth)
-            #smooth_process = get_process_instance("nipype.interfaces.spm.Smooth")
-            #smooth_process.output_type = 'NIFTI'
-            smooth_process.in_files = self.in_files
-            #smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
-            smooth_process.fwhm = self.fwhm
-            smooth_process.output_directory = os.path.split(self.out_file)[0]
-            if smooth_process:
-                study_config.reset_process_counter()
-                study_config.run(smooth_process, verbose=1)"""
-
-            smooth_process = spm.Smooth()
-            smooth_process.inputs.in_files = self.in_files
-            smooth_process.inputs.fwhm = self.fwhm
-            smooth_process.inputs.out_prefix = "SMOOTH"
-            print(smooth_process.inputs)
-            #smooth_process.inputs.out_file = self.out_file
-            smooth_process.run()
+        seg.run()
 
 
+class SPM_NewSegment(Process):
 
-            #except:
-            #    smooth_process = None
-            #    print('Smooth module of SPM is not present.')
+    def __init__(self):
+        super(SPM_NewSegment, self).__init__()
 
-        else:
-            smooth_process = None
-            print('NiPype is not present.')
+        self.add_trait("affine_regularization", traits.Enum('mni', 'eastern', 'subj', 'none',
+                                                            output=False, optional=True))
+        self.add_trait("channel_files", InputMultiPath(output=False))
+        self.add_trait("channel_info", traits.Tuple(traits.Float(), traits.Float(), traits.Tuple(traits.Bool, traits.Bool),
+                                                    output=False, optional=True))
+        self.add_trait("sampling_distance", Float(output=False, optional=True))
+        self.add_trait("tissues", traits.List(traits.Tuple(
+            traits.Tuple(ImageFileSPM(exists=True), traits.Int()),
+            traits.Int(), traits.Tuple(traits.Bool, traits.Bool),
+            traits.Tuple(traits.Bool, traits.Bool)), output=False, optional=True))
+        """self.add_trait("warping_regularization", traits.Either(
+            traits.List(traits.Float(), minlen=5, maxlen=5),
+            traits.Float(), output=False))"""
+        self.add_trait("warping_regularization",
+            traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("write_deformation_fields", traits.List(
+            traits.Bool(), output=False, optional=True))
 
-        """if smooth_process:
-            study_config.reset_process_counter()
-            study_config.run(smooth_process, verbose=1)
-            print('YOSSSSSSSSSSSSSSSS')
+        #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
+        self.add_trait("forward_deformation_field", File(output=True))
 
-            # Display
-            print('Smoothing with SPM\n...\nInputs: {', self.in_file, ', ',
-                  self.fwhm, '}\nOutput: ', self.out_file, '\n...\n')
+    def _run_process(self):
 
-            #import subprocess
-            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
-            #subprocess.check_output(['fslview', '/home/david/Nifti_data/1103_3_smooth.nii'])"""
+        seg = spm.NewSegment()
+        seg.inputs.affine_regularization = self.affine_regularization
+        seg.inputs.channel_files = self.channel_files
+        seg.inputs.channel_info = self.channel_info
+        seg.inputs.sampling_distance = self.sampling_distance
+        seg.inputs.tissues = self.tissues
+        seg.inputs.warping_regularization = self.warping_regularization
+        seg.inputs.write_deformation_fields = self.write_deformation_fields
+
+        seg.run()
 
 
+class SPM_Normalize(Process):
+
+    def __init__(self):
+        super(SPM_Normalize, self).__init__()
+
+        self.add_trait("apply_to_files", InputMultiPath(traits.Either(
+            ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False)))
+        self.add_trait("deformation_file",
+                       ImageFileSPM(output=False))
+        self.add_trait("jobtype", traits.Enum('estwrite', 'est', 'write',
+                                              usedefault=True, output=False, optional=True))
+        self.add_trait("write_bounding_box", traits.List(traits.List(traits.Float()), output=False, optional=True))
+        self.add_trait("write_voxel_sizes", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
+
+        self.add_trait("normalized_files", OutputMultiPath(File(), output=True))
+
+    def _run_process(self):
+
+        seg = spm.Normalize12()
+        seg.inputs.apply_to_files = self.apply_to_files
+        seg.inputs.deformation_file = self.deformation_file
+        seg.inputs.jobtype = self.jobtype
+        seg.inputs.write_bounding_box = self.write_bounding_box
+        seg.inputs.write_voxel_sizes = self.write_voxel_sizes
+        seg.inputs.write_interp = self.write_interp
+
+        seg.run()
+
+
+class SPM_Realign(Process):
+
+    def __init__(self):
+        super(SPM_Realign, self).__init__()
+
+        self.add_trait("in_files", InputMultiPath(traits.Either(
+            ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False, copyfile=True)))
+        self.add_trait("fwhm",
+                       traits.Range(low=0.0, output=False, optional=True))
+        self.add_trait("interp", traits.Range(low=0, high=7, output=False, optional=True))
+        self.add_trait("jobtype", traits.Enum('estwrite', 'estimate', 'write', usedefault=True,
+                                              output=False, optional=True))
+        self.add_trait("out_prefix", traits.String('r', output=False, optional=True))
+        self.add_trait("quality", traits.Range(low=0.0, high=1.0, output=False, optional=True))
+        #self.add_trait("quality", traits.Float(output=False, optional=True))
+        self.add_trait("register_to_mean", traits.Bool(output=False, optional=True))
+        self.add_trait("separation", traits.Range(low=0.0, output=False, optional=True))
+        #self.add_trait("separation", traits.Float(output=False, optional=True))
+        #self.add_trait("weight_img", File(output=False, optional=True))
+        self.add_trait("wrap", traits.List(traits.Int(), output=False, optional=True))
+        self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
+        #self.add_trait("write_interp", traits.Int(output=False, optional=True))
+        self.add_trait("write_mask", traits.Bool(output=False, optional=True))
+        self.add_trait("write_which", traits.ListInt([2, 1], usedefault=True, output=False, optional=True))
+        #self.add_trait("write_wrap", traits.Range(traits.Int(), output=False, optional=True))
+        self.add_trait("write_wrap", traits.ListInt([0, 0, 0], output=False, optional=True))
+
+        self.add_trait("realigned_files", OutputMultiPath(
+            traits.Either(traits.List(File()), File()), output=True))
+        self.add_trait("mean_image", File(output=True))
+        self.add_trait("realignment_parameters", File(output=True)) #rp_
+
+
+    def _run_process(self):
+
+        seg = spm.Realign()
+        seg.inputs.in_files = self.in_files
+        seg.inputs.fwhm = self.fwhm
+        seg.inputs.interp = self.interp
+        seg.inputs.jobtype = self.jobtype
+        seg.inputs.out_prefix = self.out_prefix
+        seg.inputs.quality = self.quality
+        seg.inputs.register_to_mean = self.register_to_mean
+        seg.inputs.separation = self.separation
+        #seg.inputs.weight_img = self.weight_img
+        seg.inputs.wrap = self.wrap
+        seg.inputs.write_interp = self.write_interp
+        seg.inputs.write_mask = self.write_mask
+        seg.inputs.write_which = self.write_which
+        seg.inputs.write_wrap = self.write_wrap
+
+        seg.run()
+
+
+class SPM_Coregister(Process):
+
+    def __init__(self):
+        super(SPM_Coregister, self).__init__()
+
+        self.add_trait("target", ImageFileSPM(output=False, copyfile=False))
+        self.add_trait("source", InputMultiPath(ImageFileSPM(), output=False, copyfile=True))
+        self.add_trait("jobtype", traits.Enum('estwrite', 'estimate', 'write', usedefault=True,
+                                              output=False, optional=True))
+        self.add_trait("apply_to_files", InputMultiPath(File(), output=False, copyfile=True)) # Optional for Nipype
+        self.add_trait("cost_function", traits.Enum('mi', 'nmi', 'ecc', 'ncc', output=False, optional=True))
+        self.add_trait("fwhm", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("separation", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("tolerance", traits.List(traits.Float(), output=False, optional=True))
+
+    def _run_process(self):
+
+        seg = spm.Coregister()
+        seg.inputs.target = self.target
+        seg.inputs.source = self.source
+        seg.inputs.jobtype = self.jobtype
+        seg.inputs.apply_to_files = self.apply_to_files
+        seg.inputs.cost_function = self.cost_function
+        seg.inputs.fwhm = self.fwhm
+        seg.inputs.separation = self.separation
+        seg.inputs.tolerance = self.tolerance
+
+        seg.run()
 
 
 '''
