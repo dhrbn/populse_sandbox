@@ -232,22 +232,13 @@ class SPM_Smooth(Process):
 
         self.add_trait("smoothed_files", OutputMultiPath(File(), output=True))
 
-    def list_outputs(self, project_folder):
+    def list_outputs(self):
         process = spm.Smooth()
-        process.input_spec.in_files = InputMultiPath(ImageFileSPM(exists=False),
-                                                     field='data', desc='list of files to smooth',
-                                                     copyfile=False, mandatory=True)
+
         if not self.in_files:
             return {}
         else:
-
-            """final_in_files = []
-            for in_file in self.in_files:
-                in_file = os.path.relpath(os.path.join(project_folder, in_file))
-                final_in_files.append(in_file)
-            process.inputs.in_files = final_in_files"""
             process.inputs.in_files = self.in_files
-            #TODO: TESTER
 
         outputs = process._list_outputs()
 
@@ -264,7 +255,7 @@ class SPM_Smooth(Process):
     def _run_process(self):
 
         process = spm.Smooth()
-        process.inputs.in_files = os.path.abspath(self.in_files)
+        process.inputs.in_files = os.path.relpath(self.in_files)
         process.inputs.fwhm = self.fwhm
         process.inputs.data_type = self.data_type
         process.inputs.implicit_masking = self.implicit_masking
