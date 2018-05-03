@@ -232,16 +232,45 @@ class SPM_Smooth(Process):
 
         self.add_trait("smoothed_files", OutputMultiPath(File(), output=True))
 
+    def list_outputs(self, project_folder):
+        process = spm.Smooth()
+        process.input_spec.in_files = InputMultiPath(ImageFileSPM(exists=False),
+                                                     field='data', desc='list of files to smooth',
+                                                     copyfile=False, mandatory=True)
+        if not self.in_files:
+            return {}
+        else:
+
+            """final_in_files = []
+            for in_file in self.in_files:
+                in_file = os.path.relpath(os.path.join(project_folder, in_file))
+                final_in_files.append(in_file)
+            process.inputs.in_files = final_in_files"""
+            process.inputs.in_files = self.in_files
+            #TODO: TESTER
+
+        outputs = process._list_outputs()
+
+        raw_data_folder = os.path.join("data", "raw_data")
+        derived_data_folder = os.path.join("data", "derived_data")
+        for out_name, out_value in outputs.items():
+            if type(out_value) is list:
+                for idx, element in enumerate(out_value):
+                    element = element.replace(raw_data_folder, derived_data_folder)
+                    outputs[out_name][idx] = element
+
+        return outputs
+
     def _run_process(self):
 
-        seg = spm.Smooth()
-        seg.inputs.in_files = self.in_files
-        seg.inputs.fwhm = self.fwhm
-        seg.inputs.data_type = self.data_type
-        seg.inputs.implicit_masking = self.implicit_masking
-        seg.inputs.out_prefix = self.out_prefix
+        process = spm.Smooth()
+        process.inputs.in_files = os.path.abspath(self.in_files)
+        process.inputs.fwhm = self.fwhm
+        process.inputs.data_type = self.data_type
+        process.inputs.implicit_masking = self.implicit_masking
+        process.inputs.out_prefix = self.out_prefix
 
-        seg.run()
+        process.run()
 
 
 class SPM_NewSegment(Process):
@@ -270,18 +299,28 @@ class SPM_NewSegment(Process):
         #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
         self.add_trait("forward_deformation_field", File(output=True))
 
+    def list_outputs(self):
+        process = spm.NewSegment()
+        if not self.channel_files:
+            return {}
+        else:
+            process.inputs.in_files = self.channel_files
+        outputs = process._list_outputs()
+
+        return outputs
+
     def _run_process(self):
 
-        seg = spm.NewSegment()
-        seg.inputs.affine_regularization = self.affine_regularization
-        seg.inputs.channel_files = self.channel_files
-        seg.inputs.channel_info = self.channel_info
-        seg.inputs.sampling_distance = self.sampling_distance
-        seg.inputs.tissues = self.tissues
-        seg.inputs.warping_regularization = self.warping_regularization
-        seg.inputs.write_deformation_fields = self.write_deformation_fields
+        process = spm.NewSegment()
+        process.inputs.affine_regularization = self.affine_regularization
+        process.inputs.channel_files = self.channel_files
+        process.inputs.channel_info = self.channel_info
+        process.inputs.sampling_distance = self.sampling_distance
+        process.inputs.tissues = self.tissues
+        process.inputs.warping_regularization = self.warping_regularization
+        process.inputs.write_deformation_fields = self.write_deformation_fields
 
-        seg.run()
+        process.run()
 
 
 class SPM_Normalize(Process):
@@ -301,17 +340,31 @@ class SPM_Normalize(Process):
 
         self.add_trait("normalized_files", OutputMultiPath(File(), output=True))
 
+    def list_outputs(self):
+        process = spm.Normalize12()
+        if not self.apply_to_files:
+            return {}
+        else:
+            process.inputs.in_files = self.apply_to_files
+        if not self.deformation_file:
+            return {}
+        else:
+            process.inputs.in_files = self.deformation_file
+        outputs = process._list_outputs()
+
+        return outputs
+
     def _run_process(self):
 
-        seg = spm.Normalize12()
-        seg.inputs.apply_to_files = self.apply_to_files
-        seg.inputs.deformation_file = self.deformation_file
-        seg.inputs.jobtype = self.jobtype
-        seg.inputs.write_bounding_box = self.write_bounding_box
-        seg.inputs.write_voxel_sizes = self.write_voxel_sizes
-        seg.inputs.write_interp = self.write_interp
+        process = spm.Normalize12()
+        process.inputs.apply_to_files = self.apply_to_files
+        process.inputs.deformation_file = self.deformation_file
+        process.inputs.jobtype = self.jobtype
+        process.inputs.write_bounding_box = self.write_bounding_box
+        process.inputs.write_voxel_sizes = self.write_voxel_sizes
+        process.inputs.write_interp = self.write_interp
 
-        seg.run()
+        process.run()
 
 
 class SPM_Realign(Process):
@@ -346,26 +399,35 @@ class SPM_Realign(Process):
         self.add_trait("mean_image", File(output=True))
         self.add_trait("realignment_parameters", File(output=True)) #rp_
 
+    def list_outputs(self):
+        process = spm.Realign()
+        if not self.in_files:
+            return {}
+        else:
+            process.inputs.in_files = self.in_files
+        outputs = process._list_outputs()
+
+        return outputs
 
     def _run_process(self):
 
-        seg = spm.Realign()
-        seg.inputs.in_files = self.in_files
-        seg.inputs.fwhm = self.fwhm
-        seg.inputs.interp = self.interp
-        seg.inputs.jobtype = self.jobtype
-        seg.inputs.out_prefix = self.out_prefix
-        seg.inputs.quality = self.quality
-        seg.inputs.register_to_mean = self.register_to_mean
-        seg.inputs.separation = self.separation
+        process = spm.Realign()
+        process.inputs.in_files = self.in_files
+        process.inputs.fwhm = self.fwhm
+        process.inputs.interp = self.interp
+        process.inputs.jobtype = self.jobtype
+        process.inputs.out_prefix = self.out_prefix
+        process.inputs.quality = self.quality
+        process.inputs.register_to_mean = self.register_to_mean
+        process.inputs.separation = self.separation
         #seg.inputs.weight_img = self.weight_img
-        seg.inputs.wrap = self.wrap
-        seg.inputs.write_interp = self.write_interp
-        seg.inputs.write_mask = self.write_mask
-        seg.inputs.write_which = self.write_which
-        seg.inputs.write_wrap = self.write_wrap
+        process.inputs.wrap = self.wrap
+        process.inputs.write_interp = self.write_interp
+        process.inputs.write_mask = self.write_mask
+        process.inputs.write_which = self.write_which
+        process.inputs.write_wrap = self.write_wrap
 
-        seg.run()
+        process.run()
 
 
 class SPM_Coregister(Process):
@@ -383,19 +445,37 @@ class SPM_Coregister(Process):
         self.add_trait("separation", traits.List(traits.Float(), output=False, optional=True))
         self.add_trait("tolerance", traits.List(traits.Float(), output=False, optional=True))
 
+    def list_outputs(self):
+        process = spm.Coregister()
+        if not self.target:
+            return {}
+        else:
+            process.inputs.in_files = self.target
+        if not self.source:
+            return {}
+        else:
+            process.inputs.in_files = self.source
+        if not self.apply_to_files:
+            return {}
+        else:
+            process.inputs.in_files = self.apply_to_files
+        outputs = process._list_outputs()
+
+        return outputs
+
     def _run_process(self):
 
-        seg = spm.Coregister()
-        seg.inputs.target = self.target
-        seg.inputs.source = self.source
-        seg.inputs.jobtype = self.jobtype
-        seg.inputs.apply_to_files = self.apply_to_files
-        seg.inputs.cost_function = self.cost_function
-        seg.inputs.fwhm = self.fwhm
-        seg.inputs.separation = self.separation
-        seg.inputs.tolerance = self.tolerance
+        process = spm.Coregister()
+        process.inputs.target = self.target
+        process.inputs.source = self.source
+        process.inputs.jobtype = self.jobtype
+        process.inputs.apply_to_files = self.apply_to_files
+        process.inputs.cost_function = self.cost_function
+        process.inputs.fwhm = self.fwhm
+        process.inputs.separation = self.separation
+        process.inputs.tolerance = self.tolerance
 
-        seg.run()
+        process.run()
 
 
 '''
