@@ -272,7 +272,8 @@ class SPM_NewSegment(Process):
         self.add_trait("affine_regularization", traits.Enum('mni', 'eastern', 'subj', 'none',
                                                             output=False, optional=True))
         self.add_trait("channel_files", InputMultiPath(output=False))
-        self.add_trait("channel_info", traits.Tuple(traits.Float(), traits.Float(), traits.Tuple(traits.Bool, traits.Bool),
+        self.add_trait("channel_info", traits.Tuple(traits.Float(), traits.Float(),
+                                                    traits.Tuple(traits.Bool, traits.Bool(True)),
                                                     output=False, optional=True))
         self.add_trait("sampling_distance", Float(output=False, optional=True))
         self.add_trait("tissues", traits.List(traits.Tuple(
@@ -287,16 +288,40 @@ class SPM_NewSegment(Process):
         self.add_trait("write_deformation_fields", traits.List(
             traits.Bool(), output=False, optional=True))
 
-        #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
         self.add_trait("forward_deformation_field", File(output=True))
 
     def list_outputs(self):
         process = spm.NewSegment()
+
         if not self.channel_files:
             return {}
         else:
-            process.inputs.in_files = self.channel_files
+            process.inputs.channel_files = self.channel_files
+
         outputs = process._list_outputs()
+
+        raw_data_folder = os.path.join("data", "raw_data")
+        derived_data_folder = os.path.join("data", "derived_data")
+        for out_name in list(outputs):
+            out_value = outputs[out_name]
+            if out_name not in ["forward_deformation_field"]:
+                del outputs[out_name]
+            else:
+                print('out_value', out_value)
+                print('out_name', out_name)
+                if type(out_value) is list:
+                    for idx, element in enumerate(out_value):
+                        if not element:
+                            continue
+                        if type(element) is list:
+                            for idx_2, element_2 in enumerate(element):
+                                element_2 = element_2.replace(raw_data_folder, derived_data_folder)
+                                outputs[out_name][idx][idx_2] = element
+                        else:
+
+                            print("element: ", element)
+                            element = element.replace(raw_data_folder, derived_data_folder)
+                            outputs[out_name][idx] = element
 
         return outputs
 
