@@ -3,13 +3,15 @@ from capsul.api import Process
 from capsul.api import StudyConfig, get_process_instance
 
 # Trait import
-from traits.api import Float, File
+from traits.api import Float, File, List
 from nipype.interfaces.base import OutputMultiPath, TraitedSpec, isdefined, InputMultiPath, File, Str, traits
 from nipype.interfaces.spm.base import ImageFileSPM
 
-# Other imports
-import os
+# MIA2 import
+from Project.Filter import Filter
 
+# Other import
+import os
 from nipype.interfaces import spm
 
 matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
@@ -217,6 +219,31 @@ class FSL_Smooth_Real(Process):
 
             #subprocess.check_output(['fslview', self.in_file])
             #subprocess.check_output(['fslview', out_file])
+
+
+class Populse_Filter(Process):
+
+    def __init__(self, database, scans_list):
+        super(Populse_Filter, self).__init__()
+
+        self.database = database
+        self.scans_list = scans_list
+        self.filter = Filter(None, [], [], [], [], [], "")
+
+        self.add_trait("input", traits.List(traits.File, output=False))
+        self.add_trait("output", traits.List(traits.File, output=True))
+
+    def list_outputs(self):
+        return self.input
+
+    def _run_process(self):
+        filt = self.filter
+        # TODO: WHAT FUNCTION TO CALL
+        self.output = self.database.get_paths_matching_advanced_search(filt.links, filt.fields, filt.conditions,
+                                                                    filt.values, filt.nots,
+                                                                    self.scans_list)
+
+        print("OUTPUT: ", self.output)
 
 
 class SPM_Smooth(Process):
