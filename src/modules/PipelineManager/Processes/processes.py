@@ -223,27 +223,43 @@ class FSL_Smooth_Real(Process):
 
 class Populse_Filter(Process):
 
-    def __init__(self, database, scans_list):
+    def __init__(self, project, scans_list):
         super(Populse_Filter, self).__init__()
 
-        self.database = database
+        self.project = project
+        self.database = self.project.database
         self.scans_list = scans_list
         self.filter = Filter(None, [], [], [], [], [], "")
 
         self.add_trait("input", traits.List(traits.File, output=False))
+        #self.add_trait("input", traits.Either(traits.List(File(exists=True)), File(exists=True), output=False))
         self.add_trait("output", traits.List(traits.File, output=True))
 
     def list_outputs(self):
-        return self.input
+        # return self.input
+        filt = self.filter
+        output = self.database.get_paths_matching_advanced_search(filt.links, filt.fields, filt.conditions,
+                                                                  filt.values, filt.nots,
+                                                                  self.scans_list)
+        for idx, element in enumerate(output):
+            full_path = os.path.join(self.project.folder, element)
+            output[idx] = full_path
+
+        return {'output': output}
 
     def _run_process(self):
+        self.output = []
         filt = self.filter
         # TODO: WHAT FUNCTION TO CALL
-        self.output = self.database.get_paths_matching_advanced_search(filt.links, filt.fields, filt.conditions,
-                                                                    filt.values, filt.nots,
-                                                                    self.scans_list)
+        output = self.database.get_paths_matching_advanced_search(filt.links, filt.fields, filt.conditions,
+                                                                  filt.values, filt.nots,
+                                                                  self.scans_list)
 
-        print("OUTPUT: ", self.output)
+        for idx, element in enumerate(output):
+            full_path = os.path.join(self.project.folder, element)
+            output[idx] = full_path
+
+        self.output = output
 
 
 class SPM_Smooth(Process):
@@ -274,15 +290,23 @@ class SPM_Smooth(Process):
         for out_name, out_value in outputs.items():
             if type(out_value) is list:
                 for idx, element in enumerate(out_value):
+                    # To change the raw_data_folder to the derived_data_folder
                     element = element.replace(raw_data_folder, derived_data_folder)
                     outputs[out_name][idx] = element
+
+        self.smoothed_files = outputs["smoothed_files"]
 
         return outputs
 
     def _run_process(self):
 
         process = spm.Smooth()
-        process.inputs.in_files = os.path.relpath(self.in_files)
+        print("IN FILES: ", self.in_files)
+        for idx, element in enumerate(self.in_files):
+            full_path = os.path.relpath(element)
+            self.in_files[idx] = full_path
+        process.inputs.in_files = self.in_files
+        #process.inputs.in_files = os.path.relpath(self.in_files)
         process.inputs.fwhm = self.fwhm
         process.inputs.data_type = self.data_type
         process.inputs.implicit_masking = self.implicit_masking
