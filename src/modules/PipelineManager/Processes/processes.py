@@ -228,7 +228,10 @@ class Populse_Filter(Process):
 
         self.project = project
         self.database = self.project.database
-        self.scans_list = scans_list
+        if scans_list:
+            self.scans_list = scans_list
+        else:
+            self.scans_list = self.project.database.get_paths_names()
         self.filter = Filter(None, [], [], [], [], [], "")
 
         self.add_trait("input", traits.List(traits.File, output=False))
@@ -236,7 +239,11 @@ class Populse_Filter(Process):
         self.add_trait("output", traits.List(traits.File, output=True))
 
     def list_outputs(self):
-        # return self.input
+        if self.input:
+            self.scans_list = self.input
+        else:
+            self.scans_list = self.project.database.get_paths_names()
+
         filt = self.filter
         output = self.database.get_paths_matching_advanced_search(filt.links, filt.fields, filt.conditions,
                                                                   filt.values, filt.nots,
@@ -248,6 +255,10 @@ class Populse_Filter(Process):
         return {'output': output}
 
     def _run_process(self):
+        if self.input:
+            self.scans_list = self.input
+        else:
+            self.scans_list = self.project.database.get_paths_names()
         self.output = []
         filt = self.filter
         # TODO: WHAT FUNCTION TO CALL
