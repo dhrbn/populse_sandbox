@@ -276,12 +276,14 @@ class SPM_Smooth(Process):
     def __init__(self):
         super(SPM_Smooth, self).__init__()
 
+        # Inputs
         self.add_trait("in_files", InputMultiPath(ImageFileSPM(), copyfile=False, output=False))
         self.add_trait("fwhm", traits.List(traits.Float, output=False, optional=True))
         self.add_trait("data_type", traits.Int(output=False, optional=True))
         self.add_trait("implicit_masking", traits.Bool(output=False, optional=True))
         self.add_trait("out_prefix", traits.String('s', usedefault=True, output=False, optional=True))
 
+        # Output
         self.add_trait("smoothed_files", OutputMultiPath(File(), output=True))
 
     def list_outputs(self):
@@ -312,12 +314,10 @@ class SPM_Smooth(Process):
         spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
         process = spm.Smooth()
-        print("IN FILES: ", self.in_files)
         for idx, element in enumerate(self.in_files):
             full_path = os.path.relpath(element)
             self.in_files[idx] = full_path
         process.inputs.in_files = self.in_files
-        #process.inputs.in_files = os.path.relpath(self.in_files)
         process.inputs.fwhm = self.fwhm
         process.inputs.data_type = self.data_type
         process.inputs.implicit_masking = self.implicit_masking
@@ -331,6 +331,7 @@ class SPM_NewSegment(Process):
     def __init__(self):
         super(SPM_NewSegment, self).__init__()
 
+        # Inputs
         self.add_trait("affine_regularization", traits.Enum('mni', 'eastern', 'subj', 'none',
                                                             output=False, optional=True))
         self.add_trait("channel_files", InputMultiPath(output=False))
@@ -350,6 +351,7 @@ class SPM_NewSegment(Process):
         self.add_trait("write_deformation_fields", traits.List(
             traits.Bool(), output=False, optional=True))
 
+        # Output
         self.add_trait("forward_deformation_field", File(output=True))
 
     def list_outputs(self):
@@ -408,6 +410,7 @@ class SPM_Normalize(Process):
     def __init__(self):
         super(SPM_Normalize, self).__init__()
 
+        # Inputs
         self.add_trait("apply_to_files", InputMultiPath(traits.Either(
             ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False)))
         self.add_trait("deformation_file",
@@ -418,6 +421,7 @@ class SPM_Normalize(Process):
         self.add_trait("write_voxel_sizes", traits.List(traits.Float(), output=False, optional=True))
         self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
 
+        # Output
         self.add_trait("normalized_files", OutputMultiPath(File(), output=True))
 
     def list_outputs(self):
@@ -454,6 +458,7 @@ class SPM_Realign(Process):
     def __init__(self):
         super(SPM_Realign, self).__init__()
 
+        # Inputs
         self.add_trait("in_files", InputMultiPath(traits.Either(
             ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False, copyfile=True)))
         self.add_trait("fwhm",
@@ -476,6 +481,7 @@ class SPM_Realign(Process):
         #self.add_trait("write_wrap", traits.Range(traits.Int(), output=False, optional=True))
         self.add_trait("write_wrap", traits.ListInt([0, 0, 0], output=False, optional=True))
 
+        # Outputs
         self.add_trait("realigned_files", OutputMultiPath(
             traits.Either(traits.List(File()), File()), output=True))
         self.add_trait("mean_image", File(output=True))
@@ -519,6 +525,7 @@ class SPM_Coregister(Process):
     def __init__(self):
         super(SPM_Coregister, self).__init__()
 
+        # Inputs
         self.add_trait("target", ImageFileSPM(output=False, copyfile=False))
         self.add_trait("source", InputMultiPath(ImageFileSPM(), output=False, copyfile=True))
         self.add_trait("jobtype", traits.Enum('estwrite', 'estimate', 'write', usedefault=True,
