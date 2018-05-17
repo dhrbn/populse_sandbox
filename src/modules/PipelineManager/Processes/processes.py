@@ -3,7 +3,7 @@ from capsul.api import Process
 from capsul.api import StudyConfig, get_process_instance
 
 # Trait import
-from traits.api import Float, File, List
+from traits.api import Float
 from nipype.interfaces.base import OutputMultiPath, TraitedSpec, isdefined, InputMultiPath, File, Str, traits
 from nipype.interfaces.spm.base import ImageFileSPM
 
@@ -15,17 +15,15 @@ import os
 from nipype.interfaces import spm
 
 matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
-spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
-
-class AvailableProcesses(list):
+"""class AvailableProcesses(list):
     # List of all the Processes in this file
     def __init__(self):
         super(AvailableProcesses, self).__init__()
         self.append(Addition)
         self.append(Substraction)
         self.append(FSL_Smooth)
-        self.append(SPM_Smooth)
+        self.append(SPM_Smooth)"""
 
 
 class Addition(Process):
@@ -311,6 +309,8 @@ class SPM_Smooth(Process):
 
     def _run_process(self):
 
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+
         process = spm.Smooth()
         print("IN FILES: ", self.in_files)
         for idx, element in enumerate(self.in_files):
@@ -389,6 +389,8 @@ class SPM_NewSegment(Process):
 
     def _run_process(self):
 
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+
         process = spm.NewSegment()
         process.inputs.affine_regularization = self.affine_regularization
         process.inputs.channel_files = self.channel_files
@@ -433,6 +435,8 @@ class SPM_Normalize(Process):
         return outputs
 
     def _run_process(self):
+
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
         process = spm.Normalize12()
         process.inputs.apply_to_files = self.apply_to_files
@@ -489,6 +493,8 @@ class SPM_Realign(Process):
 
     def _run_process(self):
 
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+
         process = spm.Realign()
         process.inputs.in_files = self.in_files
         process.inputs.fwhm = self.fwhm
@@ -542,6 +548,8 @@ class SPM_Coregister(Process):
         return outputs
 
     def _run_process(self):
+
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
         process = spm.Coregister()
         process.inputs.target = self.target
