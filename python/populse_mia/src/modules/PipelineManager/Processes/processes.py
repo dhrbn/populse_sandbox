@@ -14,6 +14,7 @@ from Project.Filter import Filter
 import os
 from nipype.interfaces import spm
 
+# To change to 'run_spm12.sh_location MCR_folder script"
 matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
 
 """class AvailableProcesses(list):
@@ -278,7 +279,8 @@ class SPM_Smooth(Process):
 
         # Inputs
         self.add_trait("in_files", InputMultiPath(ImageFileSPM(), copyfile=False, output=False))
-        self.add_trait("fwhm", traits.List(traits.Float, output=False, optional=True))
+        self.add_trait("fwhm", traits.List([6, 6, 6], output=False, optional=True))
+        #self.add_trait("fwhm", traits.List(traits.Float, output=False, optional=True))
         self.add_trait("data_type", traits.Int(output=False, optional=True))
         self.add_trait("implicit_masking", traits.Bool(output=False, optional=True))
         self.add_trait("out_prefix", traits.String('s', usedefault=True, output=False, optional=True))
@@ -335,10 +337,11 @@ class SPM_NewSegment(Process):
         self.add_trait("affine_regularization", traits.Enum('mni', 'eastern', 'subj', 'none',
                                                             output=False, optional=True))
         self.add_trait("channel_files", InputMultiPath(output=False))
-        self.add_trait("channel_info", traits.Tuple(traits.Float(), traits.Float(),
+        """self.add_trait("channel_info", traits.Tuple(traits.Float(), traits.Float(),
                                                     traits.Tuple(traits.Bool, traits.Bool(True)),
-                                                    output=False, optional=True))
-        self.add_trait("sampling_distance", Float(output=False, optional=True))
+                                                    output=False, optional=True))"""
+        self.add_trait("channel_info", traits.Tuple((0.0001, 60, (True, False)), output=False, optional=True))
+        self.add_trait("sampling_distance", Float(3.0, output=False, optional=True))
         self.add_trait("tissues", traits.List(traits.Tuple(
             traits.Tuple(ImageFileSPM(exists=True), traits.Int()),
             traits.Int(), traits.Tuple(traits.Bool, traits.Bool),
@@ -346,10 +349,15 @@ class SPM_NewSegment(Process):
         """self.add_trait("warping_regularization", traits.Either(
             traits.List(traits.Float(), minlen=5, maxlen=5),
             traits.Float(), output=False))"""
+
+        """self.add_trait("warping_regularization",
+            traits.List(traits.Float(), output=False, optional=True))"""
         self.add_trait("warping_regularization",
-            traits.List(traits.Float(), output=False, optional=True))
+            traits.List([0, 0.001, 0.5, 0.05, 0.2], output=False, optional=True))
+        """self.add_trait("write_deformation_fields", traits.List(
+            traits.Bool(), output=False, optional=True))"""
         self.add_trait("write_deformation_fields", traits.List(
-            traits.Bool(), output=False, optional=True))
+            [False, True], output=False, optional=True))
 
         # Output
         self.add_trait("forward_deformation_field", File(output=True))
@@ -411,15 +419,20 @@ class SPM_Normalize(Process):
         super(SPM_Normalize, self).__init__()
 
         # Inputs
+        # self.add_trait("apply_to_files", InputMultiPath(traits.Either(
+        #    ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False)))
         self.add_trait("apply_to_files", InputMultiPath(traits.Either(
-            ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False)))
-        self.add_trait("deformation_file",
-                       ImageFileSPM(output=False))
-        self.add_trait("jobtype", traits.Enum('estwrite', 'est', 'write',
+            ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
+        self.add_trait("deformation_file", ImageFileSPM(output=False))
+        self.add_trait("jobtype", traits.Enum('est', 'write', 'estwrite',
                                               usedefault=True, output=False, optional=True))
-        self.add_trait("write_bounding_box", traits.List(traits.List(traits.Float()), output=False, optional=True))
-        self.add_trait("write_voxel_sizes", traits.List(traits.Float(), output=False, optional=True))
-        self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
+        # self.add_trait("write_bounding_box", traits.List(traits.List(traits.Float()), output=False, optional=True))
+        self.add_trait("write_bounding_box", traits.List(traits.List([[-78, -112, -50], [78, 76, 85]]),
+                                                         output=False, optional=True))
+        # self.add_trait("write_voxel_sizes", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("write_voxel_sizes", traits.List([1, 1, 1], output=False, optional=True))
+        # self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
+        self.add_trait("write_interp", traits.Int(1, output=False, optional=True))
 
         # Output
         self.add_trait("normalized_files", OutputMultiPath(File(), output=True))
@@ -459,24 +472,45 @@ class SPM_Realign(Process):
         super(SPM_Realign, self).__init__()
 
         # Inputs
+        #self.add_trait("in_files", InputMultiPath(traits.Either(
+        #    ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False, copyfile=True)))
         self.add_trait("in_files", InputMultiPath(traits.Either(
-            ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False, copyfile=True)))
-        self.add_trait("fwhm",
-                       traits.Range(low=0.0, output=False, optional=True))
-        self.add_trait("interp", traits.Range(low=0, high=7, output=False, optional=True))
+            ImageFileSPM(), traits.List(ImageFileSPM()), output=False, copyfile=True)))
+
+        """self.add_trait("fwhm",
+                       traits.Range(low=0.0, output=False, optional=True))"""
+        self.add_trait("fwhm", traits.Float(5.0, output=False, optional=True))
+
+        # self.add_trait("interp", traits.Range(low=0, high=7, output=False, optional=True))
+        self.add_trait("interp", traits.Int(2, output=False, optional=True))
+
         self.add_trait("jobtype", traits.Enum('estwrite', 'estimate', 'write', usedefault=True,
                                               output=False, optional=True))
         self.add_trait("out_prefix", traits.String('r', output=False, optional=True))
-        self.add_trait("quality", traits.Range(low=0.0, high=1.0, output=False, optional=True))
-        #self.add_trait("quality", traits.Float(output=False, optional=True))
-        self.add_trait("register_to_mean", traits.Bool(output=False, optional=True))
-        self.add_trait("separation", traits.Range(low=0.0, output=False, optional=True))
-        #self.add_trait("separation", traits.Float(output=False, optional=True))
-        #self.add_trait("weight_img", File(output=False, optional=True))
-        self.add_trait("wrap", traits.List(traits.Int(), output=False, optional=True))
-        self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
-        #self.add_trait("write_interp", traits.Int(output=False, optional=True))
-        self.add_trait("write_mask", traits.Bool(output=False, optional=True))
+        # self.add_trait("quality", traits.Range(low=0.0, high=1.0, output=False, optional=True))
+
+        # self.add_trait("quality", traits.Float(output=False, optional=True))
+        self.add_trait("quality", traits.Float(0.9, output=False, optional=True))
+
+        # self.add_trait("register_to_mean", traits.Bool(output=False, optional=True))
+        self.add_trait("register_to_mean", traits.Bool(True, output=False, optional=True))
+
+        # self.add_trait("separation", traits.Range(low=0.0, output=False, optional=True))
+        self.add_trait("separation", traits.Float(4.0, output=False, optional=True))
+
+        # self.add_trait("separation", traits.Float(output=False, optional=True))
+        # self.add_trait("weight_img", File(output=False, optional=True))
+
+        # self.add_trait("wrap", traits.List(traits.Int(), output=False, optional=True))
+        self.add_trait("wrap", traits.List([0, 0, 0], output=False, optional=True))
+
+        # self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
+        self.add_trait("write_interp", traits.Int(4, output=False, optional=True))
+
+        # self.add_trait("write_interp", traits.Int(output=False, optional=True))
+        # self.add_trait("write_mask", traits.Bool(output=False, optional=True))
+        self.add_trait("write_mask", traits.Bool(True, output=False, optional=True))
+
         self.add_trait("write_which", traits.ListInt([2, 1], usedefault=True, output=False, optional=True))
         #self.add_trait("write_wrap", traits.Range(traits.Int(), output=False, optional=True))
         self.add_trait("write_wrap", traits.ListInt([0, 0, 0], output=False, optional=True))
@@ -494,7 +528,6 @@ class SPM_Realign(Process):
         else:
             process.inputs.in_files = self.in_files
         outputs = process._list_outputs()
-
         return outputs
 
     def _run_process(self):
@@ -528,13 +561,21 @@ class SPM_Coregister(Process):
         # Inputs
         self.add_trait("target", ImageFileSPM(output=False, copyfile=False))
         self.add_trait("source", InputMultiPath(ImageFileSPM(), output=False, copyfile=True))
-        self.add_trait("jobtype", traits.Enum('estwrite', 'estimate', 'write', usedefault=True,
+        self.add_trait("jobtype", traits.Enum('estimate', 'estwrite', 'write', usedefault=True,
                                               output=False, optional=True))
         self.add_trait("apply_to_files", InputMultiPath(File(), output=False, copyfile=True)) # Optional for Nipype
-        self.add_trait("cost_function", traits.Enum('mi', 'nmi', 'ecc', 'ncc', output=False, optional=True))
-        self.add_trait("fwhm", traits.List(traits.Float(), output=False, optional=True))
-        self.add_trait("separation", traits.List(traits.Float(), output=False, optional=True))
-        self.add_trait("tolerance", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("cost_function", traits.Enum('nmi', 'mi', 'ecc', 'ncc', output=False, optional=True))
+
+        # self.add_trait("fwhm", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("fwhm", traits.List([7, 7], output=False, optional=True))
+
+        # self.add_trait("separation", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("separation", traits.List([4, 2], output=False, optional=True))
+
+        # self.add_trait("tolerance", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("tolerance",
+                       traits.List([.02, .02, .02, 0.001, 0.001, 0.001, .01, .01, .01, 0.001, 0.001, 0.001],
+                                   output=False, optional=True))
 
     def list_outputs(self):
         process = spm.Coregister()
@@ -644,3 +685,4 @@ class FSL_Smooth(Process):
 
 
 '''
+
