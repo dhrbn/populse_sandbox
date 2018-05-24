@@ -359,6 +359,7 @@ class SPM_NewSegment(Process):
         # Output
         self.add_trait("forward_deformation_field", File(output=True))
         self.add_trait("bias_field_images", File(output=True))
+        self.add_trait("native_class_images", File(output=True))
 
     def list_outputs(self):
         process = spm.NewSegment()
@@ -591,6 +592,9 @@ class SPM_Coregister(Process):
                        traits.List([.02, .02, .02, 0.001, 0.001, 0.001, .01, .01, .01, 0.001, 0.001, 0.001],
                                    output=False, optional=True))
 
+        # Outputs
+        self.add_trait("coregistered_files", OutputMultiPath(File(), output=True))
+
     def list_outputs(self):
         process = spm.Coregister()
         if not self.target:
@@ -605,6 +609,10 @@ class SPM_Coregister(Process):
             return {}
         else:
             process.inputs.apply_to_files = self.apply_to_files
+        if not self.jobtype:
+            return {}
+        else:
+            process.inputs.jobtype = self.jobtype
         outputs = process._list_outputs()
 
         return outputs
