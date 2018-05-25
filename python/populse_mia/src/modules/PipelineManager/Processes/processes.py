@@ -17,15 +17,12 @@ from nipype.interfaces import spm
 # To change to 'run_spm12.sh_location MCR_folder script"
 matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
 
-"""class AvailableProcesses(list):
-    # List of all the Processes in this file
-    def __init__(self):
-        super(AvailableProcesses, self).__init__()
-        self.append(Addition)
-        self.append(Substraction)
-        self.append(FSL_Smooth)
-        self.append(SPM_Smooth)"""
 
+def check_inputs(input_value):
+    if input_value is not None:
+        return input_value
+    else:
+        return {}
 
 class Addition(Process):
 
@@ -298,7 +295,7 @@ class SPM_Smooth(Process):
 
         outputs = process._list_outputs()
 
-        raw_data_folder = os.path.join("data", "raw_data")
+        """raw_data_folder = os.path.join("data", "raw_data")
         derived_data_folder = os.path.join("data", "derived_data")
         for out_name, out_value in outputs.items():
             if type(out_value) is list:
@@ -307,7 +304,7 @@ class SPM_Smooth(Process):
                     element = element.replace(raw_data_folder, derived_data_folder)
                     outputs[out_name][idx] = element
 
-        self.smoothed_files = outputs["smoothed_files"]
+        self.smoothed_files = outputs["smoothed_files"]"""
 
         return outputs
 
@@ -340,7 +337,7 @@ class SPM_NewSegment(Process):
         """self.add_trait("channel_info", traits.Tuple(traits.Float(), traits.Float(),
                                                     traits.Tuple(traits.Bool, traits.Bool(True)),
                                                     output=False, optional=True))"""
-        self.add_trait("channel_info", traits.Tuple((0.0001, 60, (True, False)), output=False, optional=True))
+        self.add_trait("channel_info", traits.Tuple((0.0001, 60, (False, True)), output=False, optional=True))
         self.add_trait("sampling_distance", Float(3.0, output=False, optional=True))
         self.add_trait("tissues", traits.List(traits.Tuple(
             traits.Tuple(ImageFileSPM(exists=True), traits.Int()),
@@ -361,6 +358,8 @@ class SPM_NewSegment(Process):
 
         # Output
         self.add_trait("forward_deformation_field", File(output=True))
+        self.add_trait("bias_field_images", File(output=True))
+        self.add_trait("native_class_images", File(output=True))
 
     def list_outputs(self):
         process = spm.NewSegment()
@@ -370,17 +369,25 @@ class SPM_NewSegment(Process):
         else:
             process.inputs.channel_files = self.channel_files
 
+        if not self.write_deformation_fields:
+            return {}
+        else:
+            process.inputs.write_deformation_fields = self.write_deformation_fields
+
+        if not self.channel_info:
+            return {}
+        else:
+            process.inputs.channel_info = self.channel_info
+
         outputs = process._list_outputs()
 
-        raw_data_folder = os.path.join("data", "raw_data")
+        """raw_data_folder = os.path.join("data", "raw_data")
         derived_data_folder = os.path.join("data", "derived_data")
         for out_name in list(outputs):
             out_value = outputs[out_name]
             if out_name not in ["forward_deformation_field"]:
                 del outputs[out_name]
             else:
-                print('out_value', out_value)
-                print('out_name', out_name)
                 if type(out_value) is list:
                     for idx, element in enumerate(out_value):
                         if not element:
@@ -393,7 +400,7 @@ class SPM_NewSegment(Process):
 
                             print("element: ", element)
                             element = element.replace(raw_data_folder, derived_data_folder)
-                            outputs[out_name][idx] = element
+                            outputs[out_name][idx] = element"""
 
         return outputs
 
@@ -424,8 +431,11 @@ class SPM_Normalize(Process):
         self.add_trait("apply_to_files", InputMultiPath(traits.Either(
             ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
         self.add_trait("deformation_file", ImageFileSPM(output=False))
-        self.add_trait("jobtype", traits.Enum('est', 'write', 'estwrite',
-                                              usedefault=True, output=False, optional=True))
+
+        """self.add_trait("jobtype", traits.Enum('write', 'est', 'estwrite',
+                                              usedefault=True, output=False, optional=True))"""
+        self.add_trait("jobtype", traits.String('write',
+                                                usedefault=True, output=False, optional=True))
         # self.add_trait("write_bounding_box", traits.List(traits.List(traits.Float()), output=False, optional=True))
         self.add_trait("write_bounding_box", traits.List(traits.List([[-78, -112, -50], [78, 76, 85]]),
                                                          output=False, optional=True))
@@ -442,11 +452,16 @@ class SPM_Normalize(Process):
         if not self.apply_to_files:
             return {}
         else:
-            process.inputs.in_files = self.apply_to_files
+            process.inputs.apply_to_files = self.apply_to_files
         if not self.deformation_file:
             return {}
         else:
-            process.inputs.in_files = self.deformation_file
+            process.inputs.deformation_file = self.deformation_file
+        if not self.jobtype:
+            return {}
+        else:
+            process.inputs.jobtype = self.jobtype
+
         outputs = process._list_outputs()
 
         return outputs
@@ -577,20 +592,27 @@ class SPM_Coregister(Process):
                        traits.List([.02, .02, .02, 0.001, 0.001, 0.001, .01, .01, .01, 0.001, 0.001, 0.001],
                                    output=False, optional=True))
 
+        # Outputs
+        self.add_trait("coregistered_files", OutputMultiPath(File(), output=True))
+
     def list_outputs(self):
         process = spm.Coregister()
         if not self.target:
             return {}
         else:
-            process.inputs.in_files = self.target
+            process.inputs.target = self.target
         if not self.source:
             return {}
         else:
-            process.inputs.in_files = self.source
+            process.inputs.source = self.source
         if not self.apply_to_files:
             return {}
         else:
-            process.inputs.in_files = self.apply_to_files
+            process.inputs.apply_to_files = self.apply_to_files
+        if not self.jobtype:
+            return {}
+        else:
+            process.inputs.jobtype = self.jobtype
         outputs = process._list_outputs()
 
         return outputs
