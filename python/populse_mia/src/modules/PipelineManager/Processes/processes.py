@@ -359,7 +359,7 @@ class SPM_NewSegment(Process):
         # Output
         self.add_trait("forward_deformation_field", File(output=True))
         self.add_trait("bias_field_images", File(output=True))
-        self.add_trait("native_class_images", File(output=True))
+        self.add_trait("native_class_images", traits.List(traits.List(File()), output=True))
 
     def list_outputs(self):
         process = spm.NewSegment()
