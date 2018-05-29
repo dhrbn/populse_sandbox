@@ -3,7 +3,7 @@ from capsul.api import Process
 from capsul.api import StudyConfig, get_process_instance
 
 # Trait import
-from traits.api import Float
+from traits.api import Float, TraitListObject
 from nipype.interfaces.base import OutputMultiPath, TraitedSpec, isdefined, InputMultiPath, File, Str, traits
 from nipype.interfaces.spm.base import ImageFileSPM
 
@@ -13,6 +13,7 @@ from Project.Filter import Filter
 # Other import
 import os
 from nipype.interfaces import spm
+from scipy.misc import imresize
 
 # To change to 'run_spm12.sh_location MCR_folder script"
 matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
@@ -634,77 +635,206 @@ class SPM_Coregister(Process):
         process.run()
 
 
-'''
-class FSL_Smooth(Process):
+class Normalize_Spatial_Mask(Process):
 
-    def __init__(self, node_name):
-        super(FSL_Smooth, self).__init__()
+    def __init__(self):
+        super(Normalize_Spatial_Mask, self).__init__()
 
-        self.node_name = node_name
+        # Inputs
+        self.add_trait("apply_to_files", InputMultiPath(traits.Either(
+            ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
+        self.add_trait("deformation_file", ImageFileSPM(output=False))
 
-        self.add_trait(node_name + "_in_file", File(output=False))
-        self.add_trait(node_name + "_fwhm", Float(output=False))
-        #self.add_trait(node_name + "_sigma", Float(output=False, optional=True))
-        self.add_trait(node_name + "_out_file", File(output=True))
+        self.add_trait("jobtype", traits.String('write',
+                                                usedefault=True, output=False, optional=True))
+        # self.add_trait("write_bounding_box", traits.List(traits.List(traits.Float()), output=False, optional=True))
+        self.add_trait("write_bounding_box", traits.List(traits.List([[-78, -112, -50], [78, 76, 85]]),
+                                                         output=False, optional=True))
+        # self.add_trait("write_voxel_sizes", traits.List(traits.Float(), output=False, optional=True))
+        self.add_trait("write_voxel_sizes", traits.List([1, 1, 1], output=False, optional=True))
+        # self.add_trait("write_interp", traits.Range(low=0, high=7, output=False, optional=True))
+        self.add_trait("write_interp", traits.Int(1, output=False, optional=True))
 
-        self.in_file = getattr(self, self.node_name + "_in_file")
-        self.fwhm = getattr(self, self.node_name + "_fwhm")
-        #self.sigma = getattr(self, self.node_name + "_sigma")
-        self.out_file = getattr(self, self.node_name + "_out_file")
+        # Output
+        self.add_trait("normalized_files", OutputMultiPath(File(), output=True))
+
+    def _check_file_names(self):
+        # Need to take only the three first ROIs
+        files = []
+        for file_name in self.apply_to_files:
+            if type(file_name) in [list, TraitListObject]:
+                file_name = file_name[0]
+            if "c1" not in file_name:
+                continue
+            elif "c2" not in file_name:
+                continue
+            elif "c3" not in file_name:
+                continue
+            else:
+                files.append(file_name)
+        return files
+
+    def list_outputs(self):
+        process = spm.Normalize12()
+        if not self.apply_to_files:
+            return {}
+        else:
+            process.inputs.apply_to_files = self._check_file_names()
+
+        if not self.deformation_file:
+            return {}
+        else:
+            process.inputs.deformation_file = self.deformation_file
+        if not self.jobtype:
+            return {}
+        else:
+            process.inputs.jobtype = self.jobtype
+
+        outputs = process._list_outputs()
+
+        return outputs
 
     def _run_process(self):
-        self.get_plugs_values()
 
-        study_config = StudyConfig(
-            modules=["FSLConfig"],
-            fsl_config="/etc/fsl/5.0/fsl.sh",
-            use_smart_caching=True,
-            output_directory="/tmp/capsul_demo",
-            use_fsl=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
-        # Process
-        if study_config.use_fsl:
-            try:
+        process = spm.Normalize12()
+        process.inputs.apply_to_files = self._check_file_names()
+        process.inputs.deformation_file = self.deformation_file
+        process.inputs.jobtype = self.jobtype
+        process.inputs.write_bounding_box = self.write_bounding_box
+        process.inputs.write_voxel_sizes = self.write_voxel_sizes
+        process.inputs.write_interp = self.write_interp
 
-                """smooth_process = get_process_instance("nipype.interfaces.fsl.Smooth")
-                smooth_process.output_type = 'NIFTI'
-                #smooth_process.in_file = self.in_file
-                smooth_process.in_file = "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii"
-                if self.fwhm > 0:
-                    smooth_process.fwhm = self.fwhm
-                elif self.sigma > 0:
-                    smooth_process.sigma = self.sigma
-                else:
-                    smooth_process.fwhm = 2.0
-                #smooth_process.output_directory = os.path.split(self.out_file)[0]
-                smooth_process.output_directory = '/home/david/Nifti_data'"""
-
-                fsl.check_call(study_config, ['fslmaths', "/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii",
-                                              "-kernel", str(self.fwhm), "-fmean",
-                                              '/home/david/Nifti_data/test_fsl.nii'])
-
-            except:
-                smooth_process = None
-                print('Smooth module of FSL is not present.')
-
-        import subprocess
-        subprocess.check_output(['fslview', '/home/david/Nifti_data/1103/3/NIFTI/1103_3.nii'])
-        subprocess.check_output(['fslview', '/home/david/Nifti_data/test_fsl.nii'])
-
-        self.set_plugs_values()
-
-    def get_plugs_values(self):
-        self.in_file = getattr(self, self.node_name + "_in_file")
-        self.fwhm = getattr(self, self.node_name + "_fwhm")
-        #self.sigma = getattr(self, self.node_name + "_sigma")
-        self.out_file = getattr(self, self.node_name + "_out_file")
-
-    def set_plugs_values(self):
-        setattr(self, self.node_name + "_in_file", self.in_file)
-        setattr(self, self.node_name + "_fwhm", self.fwhm)
-        #setattr(self, self.node_name + "_sigma", self.sigma)
-        setattr(self, self.node_name + "_out_file", self.out_file)
+        process.run()
 
 
-'''
+class Threshold(Process):
+
+    def __init__(self):
+        super(Threshold, self).__init__()
+
+        # Inputs
+        self.add_trait("in_files", InputMultiPath(traits.Either(
+            ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
+        self.add_trait("threshold", traits.Float(0.3, output=False, optional=True))
+        self.add_trait("suffix", traits.String("_002", output=False, optional=True))
+        self.add_trait("prefix", traits.String("", output=False, optional=True))
+
+        # Output
+        self.add_trait("out_files", OutputMultiPath(File(), output=True))
+
+    def _check_file_names(self):
+        # Need to take only the first ROI
+        for file_name in self.in_files:
+            if type(file_name) in [list, TraitListObject]:
+                file_name = file_name[0]
+            if "c1" not in file_name:
+                continue
+            else:
+                return file_name
+
+    def list_outputs(self):
+
+        file_name = self._check_file_names()
+        file_path, file_extension = os.path.splitext(file_name)
+        out_file = os.path.join(file_path, self.prefix + file_name + self.suffix, file_extension)
+
+        d = {'out_files': out_file}
+        return d
+
+    def _run_process(self):
+
+        file_name = self._check_file_names()
+        if type(file_name) in [list, TraitListObject]:
+            file_name = file_name[0]
+
+        # Image processing
+        import nibabel as nib
+        img = nib.load(file_name)
+        img_data = img.get_data()
+        img_thresh = (img_data > self.threshold).astype(float)
+        img_final = nib.Nifti1Image(img_thresh, img.affine, img.header)
+
+        # Image save
+        file_path, file_extension = os.path.splitext(file_name)
+        out_file = os.path.join(file_path, self.prefix + file_name + self.suffix, file_extension)
+        nib.save(img_final, out_file)
+
+
+class Resize(Process):
+
+    def __init__(self):
+        super(Resize, self).__init__()
+
+        # Inputs
+        self.add_trait("reference_image", InputMultiPath(traits.Either(
+            ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
+        self.add_trait("mask_to_resize", InputMultiPath(traits.Either(
+            ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
+        self.add_trait("suffix", traits.String("_003", output=False, optional=True))
+        self.add_trait("prefix", traits.String("mask_", output=False, optional=True))
+        self.add_trait("interp", traits.Int(1, output=False, optional=True))
+
+        # Output
+        self.add_trait("out_file", ImageFileSPM(output=False))
+
+    def list_outputs(self):
+
+        file_name = self.mask_to_resize
+        file_path, file_extension = os.path.splitext(file_name)
+        if file_path[-4:] == "_002":
+            file_path = file_path[:-4]
+        out_file = os.path.join(file_path, self.prefix + file_name + self.suffix, file_extension)
+
+        d = {'out_file': out_file}
+        return d
+
+    def _check_interp(self):
+        if self.interp == 1:
+            # Trilinear TODO: IS IT THE SAME AS BILINEAR?
+            return "bilinear"
+        elif self.interp == 0:
+            # Nearest neighbour
+            return "nearest"
+        else:
+            # TODO: WHAT ABOUT THE N-SINC INTERPOLATION?
+            return None
+
+    def _run_process(self):
+
+        mask_name = self.mask_to_resize
+        if type(mask_name) in [list, TraitListObject]:
+            mask_name = mask_name[0]
+
+        ref_name = self.reference_image
+        if type(ref_name) in [list, TraitListObject]:
+            mask_name = ref_name[0]
+
+        # Image processing
+        import nibabel as nib
+
+        mask = nib.load(mask_name)
+        mask_data = mask.get_data()
+
+        ref = nib.load(ref_name)
+        ref_data = ref.get_data()
+        ref_size = ref_data.shape
+
+        interp = self._check_interp()
+        if not interp:
+            raise ValueError("interp value of a Resize process has to be 0 (Nearest neighbour) or 1 (Trilinear).")
+
+        resized_mask = imresize(mask_data, ref_size, interp=interp)
+        # TODO: Taking info of mask's or ref's header?
+        mask_final = nib.Nifti1Image(resized_mask, ref.affine, ref.header)
+
+        # Image save
+        file_path, file_extension = os.path.splitext(mask_name)
+        if file_path[-4:] == "_002":
+            file_path = file_path[:-4]
+        out_file = os.path.join(file_path, self.prefix + mask_name + self.suffix, file_extension)
+        nib.save(mask_final, out_file)
+
+
 
