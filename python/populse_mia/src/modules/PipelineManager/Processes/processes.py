@@ -13,7 +13,7 @@ from Project.Filter import Filter
 # Other import
 import os
 from nipype.interfaces import spm
-from scipy.misc import imresize
+from skimage.transform import resize
 
 # To change to 'run_spm12.sh_location MCR_folder script"
 matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
@@ -641,14 +641,15 @@ class Normalize_Spatial_Mask(Process):
         super(Normalize_Spatial_Mask, self).__init__()
 
         # Inputs
-        self.add_trait("apply_to_files", InputMultiPath(traits.Either(
-            ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
+        """self.add_trait("apply_to_files", InputMultiPath(traits.Either(
+            ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))"""
+        self.add_trait("apply_to_files", traits.List(ImageFileSPM(), output=False))
         self.add_trait("deformation_file", ImageFileSPM(output=False))
 
         self.add_trait("jobtype", traits.String('write',
                                                 usedefault=True, output=False, optional=True))
         # self.add_trait("write_bounding_box", traits.List(traits.List(traits.Float()), output=False, optional=True))
-        self.add_trait("write_bounding_box", traits.List(traits.List([[-78, -112, -50], [78, 76, 85]]),
+        self.add_trait("write_bounding_box", traits.List([[-78, -112, -50], [78, 76, 85]],
                                                          output=False, optional=True))
         # self.add_trait("write_voxel_sizes", traits.List(traits.Float(), output=False, optional=True))
         self.add_trait("write_voxel_sizes", traits.List([1, 1, 1], output=False, optional=True))
@@ -665,13 +666,16 @@ class Normalize_Spatial_Mask(Process):
             if type(file_name) in [list, TraitListObject]:
                 file_name = file_name[0]
             if "c1" not in file_name:
-                continue
-            elif "c2" not in file_name:
-                continue
-            elif "c3" not in file_name:
-                continue
+                if "c2" not in file_name:
+                    if "c3" not in file_name:
+                        continue
+                    else:
+                        files.append(file_name)
+                else:
+                    files.append(file_name)
             else:
                 files.append(file_name)
+
         return files
 
     def list_outputs(self):
@@ -736,14 +740,30 @@ class Threshold(Process):
 
     def list_outputs(self):
 
+        if not self.in_files:
+            return {}
+
+        if not self.suffix:
+            self.suffix = ""
+
+        if not self.prefix:
+            self.prefix = ""
+
         file_name = self._check_file_names()
-        file_path, file_extension = os.path.splitext(file_name)
-        out_file = os.path.join(file_path, self.prefix + file_name + self.suffix, file_extension)
+        path, file_name = os.path.split(file_name)
+        file_name_no_ext, file_extension = os.path.splitext(file_name)
+        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
 
         d = {'out_files': out_file}
         return d
 
     def _run_process(self):
+
+        if not self.suffix:
+            self.suffix = ""
+
+        if not self.prefix:
+            self.prefix = ""
 
         file_name = self._check_file_names()
         if type(file_name) in [list, TraitListObject]:
@@ -757,8 +777,9 @@ class Threshold(Process):
         img_final = nib.Nifti1Image(img_thresh, img.affine, img.header)
 
         # Image save
-        file_path, file_extension = os.path.splitext(file_name)
-        out_file = os.path.join(file_path, self.prefix + file_name + self.suffix, file_extension)
+        path, file_name = os.path.split(file_name)
+        file_name_no_ext, file_extension = os.path.splitext(file_name)
+        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
         nib.save(img_final, out_file)
 
 
@@ -773,19 +794,32 @@ class Resize(Process):
         self.add_trait("mask_to_resize", InputMultiPath(traits.Either(
             ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
         self.add_trait("suffix", traits.String("_003", output=False, optional=True))
-        self.add_trait("prefix", traits.String("mask_", output=False, optional=True))
+        self.add_trait("prefix", traits.String("", output=False, optional=True))
         self.add_trait("interp", traits.Int(1, output=False, optional=True))
 
         # Output
-        self.add_trait("out_file", ImageFileSPM(output=False))
+        self.add_trait("out_file", ImageFileSPM(output=True))
 
     def list_outputs(self):
 
-        file_name = self.mask_to_resize
-        file_path, file_extension = os.path.splitext(file_name)
-        if file_path[-4:] == "_002":
-            file_path = file_path[:-4]
-        out_file = os.path.join(file_path, self.prefix + file_name + self.suffix, file_extension)
+        if not self.mask_to_resize:
+            return {}
+
+        if not self.suffix:
+            self.suffix = ""
+
+        if not self.prefix:
+            self.prefix = ""
+
+        mask_name = self.mask_to_resize
+        if type(mask_name) in [list, TraitListObject]:
+            mask_name = mask_name[0]
+
+        path, file_name = os.path.split(mask_name)
+        file_name_no_ext, file_extension = os.path.splitext(file_name)
+        if file_name_no_ext[-4:] == "_002":
+            file_name_no_ext = file_name_no_ext[:-4]
+        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
 
         d = {'out_file': out_file}
         return d
@@ -809,7 +843,13 @@ class Resize(Process):
 
         ref_name = self.reference_image
         if type(ref_name) in [list, TraitListObject]:
-            mask_name = ref_name[0]
+            ref_name = ref_name[0]
+
+        if not self.suffix:
+            self.suffix = ""
+
+        if not self.prefix:
+            self.prefix = ""
 
         # Image processing
         import nibabel as nib
@@ -819,21 +859,24 @@ class Resize(Process):
 
         ref = nib.load(ref_name)
         ref_data = ref.get_data()
-        ref_size = ref_data.shape
+        # Taking the first volume
+        ref_size = ref_data.shape[:3]
 
         interp = self._check_interp()
         if not interp:
             raise ValueError("interp value of a Resize process has to be 0 (Nearest neighbour) or 1 (Trilinear).")
 
-        resized_mask = imresize(mask_data, ref_size, interp=interp)
+        # TODO: no info about the interp
+        resized_mask = resize(mask_data, ref_size)
         # TODO: Taking info of mask's or ref's header?
         mask_final = nib.Nifti1Image(resized_mask, ref.affine, ref.header)
 
         # Image save
-        file_path, file_extension = os.path.splitext(mask_name)
-        if file_path[-4:] == "_002":
-            file_path = file_path[:-4]
-        out_file = os.path.join(file_path, self.prefix + mask_name + self.suffix, file_extension)
+        path, file_name = os.path.split(mask_name)
+        file_name_no_ext, file_extension = os.path.splitext(file_name)
+        if file_name_no_ext[-4:] == "_002":
+            file_name_no_ext = file_name_no_ext[:-4]
+        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
         nib.save(mask_final, out_file)
 
 
