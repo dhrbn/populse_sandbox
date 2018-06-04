@@ -880,4 +880,20 @@ class Resize(Process):
         nib.save(mask_final, out_file)
 
 
+class SPM_Level1Design(Process):
+
+    def __init__(self):
+        super(SPM_Level1Design, self).__init__()
+
+        # Inputs
+        self.add_trait("timing_units", traits.Enum('scans', 'secs', use_default=True,
+                                                   output=False, copyfile=False, optional=True))
+        self.add_trait("interscan_interval", traits.Float(3.0, output=False, use_default=True))
+
+        self.add_trait("microtime_resolution", traits.Int(16, usedefault=True, output=False, optional=True))
+        self.add_trait("microtime_onset", traits.Float(1.0, usedefault=True, output=False, optional=True))
+        self.add_trait("session_info", traits.Any(output=False, optional=True)) # TODO: Find the value to add
+        self.add_trait("bases", traits.Dict(traits.Enum('hrf', 'fourier', 'fourier_han', 'gamma', 'fir'),
+                                            output=False))
+
 
