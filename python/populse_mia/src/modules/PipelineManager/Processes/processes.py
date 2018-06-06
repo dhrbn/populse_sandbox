@@ -941,5 +941,14 @@ class SPM_Level1Design(Process):
 
         return s
 
+    def list_outputs(self):
+
+        cur_dir = os.getcwd()
+        out_file = os.path.join(cur_dir, 'SPM.mat')
+        print(out_file)
+
+        d = {'spm_mat_file': out_file}
+        return d
+
 
 
