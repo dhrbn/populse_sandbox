@@ -893,7 +893,53 @@ class SPM_Level1Design(Process):
         self.add_trait("microtime_resolution", traits.Int(16, usedefault=True, output=False, optional=True))
         self.add_trait("microtime_onset", traits.Float(1.0, usedefault=True, output=False, optional=True))
         self.add_trait("session_info", traits.Any(output=False, optional=True)) # TODO: Find the value to add
+        self.add_trait("factor_info", traits.List(traits.Dict(traits.Enum('name', 'levels')),
+                                                   output=False, optional=True))
+        #self.add_trait("factor_info", traits.Dict(traits.Enum('name', 'levels'), output=False, optional=True))
         self.add_trait("bases", traits.Dict(traits.Enum('hrf', 'fourier', 'fourier_han', 'gamma', 'fir'),
                                             output=False))
+        self.add_trait("volterra_expansion_order", traits.Int(1, output=False, optional=True))
+        self.add_trait("global_intensity_normalization", traits.Enum('none', 'scaling', output=False, optional=True))
+        self.add_trait("mask_image", traits.File(output=False, optional=True))
+        self.add_trait("model_serial_correlations", traits.Enum('AR(1)', 'FAST', 'none', output=False, optional=True))
+
+        # Output
+        self.add_trait("spm_mat_file", traits.File(output=True))
+
+    def _run_process(self):
+
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+
+        process = spm.Level1Design()
+        process.inputs.timing_units = self.timing_units
+        process.inputs.interscan_interval = self.interscan_interval
+        process.inputs.microtime_resolution = self.microtime_resolution
+        process.inputs.microtime_onset = self.microtime_onset
+        process.inputs.factor_info = self.factor_info
+        process.inputs.bases = self.bases
+        process.inputs.volterra_expansion_order = self.volterra_expansion_order
+        process.inputs.global_intensity_normalization = self.global_intensity_normalization
+        process.inputs.mask_image = self.mask_image
+        process.inputs.model_serial_correlations = self.model_serial_correlations
+
+        #process.inputs.session_info = self.get_session_info()
+        process.inputs.session_info = self.session_info
+
+        print(process._parse_inputs())
+
+        process.run()
+
+    def get_session_info(self):
+        from nipype.algorithms import modelgen
+        from nipype.interfaces.base import Bunch
+        s = modelgen.SpecifyModel()
+
+        for key, value in self.session_info.items():
+            if key == 'subject_info' and value == {}:
+                value = None
+            setattr(s.inputs, key, value)
+
+        return s
+
 
 
