@@ -3,7 +3,7 @@ from capsul.api import Process
 from capsul.api import StudyConfig, get_process_instance
 
 # Trait import
-from traits.api import Float, TraitListObject
+from traits.api import Float, TraitListObject, Undefined
 from nipype.interfaces.base import OutputMultiPath, TraitedSpec, isdefined, InputMultiPath, File, Str, traits
 from nipype.interfaces.spm.base import ImageFileSPM
 
@@ -1008,11 +1008,85 @@ class SPM_EstimateModel(Process):
         return outputs
 
     def _run_process(self):
+
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+
         process = spm.EstimateModel()
         process.inputs.spm_mat_file = self.spm_mat_file
+        # TODO: TEST
+
+        # Removing the image files to avoid a bug
+        outputs = self.list_outputs()
+        for key, value in outputs.items():
+            if key not in ["out_spm_mat_file"]:
+                if value not in ["<undefined>", Undefined]:
+                    if os.path.isfile(value):
+                        os.remove(value)
+
         process.inputs.estimation_method = self.estimation_method
         process.inputs.write_residuals = self.write_residuals
         process.inputs.flags = self.flags
-        #process.inputs.version = self.version
 
         process.run()
+
+
+class SPM_EstimateContrast(Process):
+
+    def __init__(self):
+        super(SPM_EstimateContrast, self).__init__()
+
+        # Inputs
+        self.add_trait("spm_mat_file", File(output=False, copyfile=True))
+        self.add_trait("contrasts", traits.List(output=False))
+        self.add_trait("beta_images", InputMultiPath(File(), output=False, copyfile=False))
+        self.add_trait("residual_image", File(output=False, copyfile=False))
+        self.add_trait("use_derivs", traits.Bool(output=False, optional=True, xor=['group_contrast']))
+        self.add_trait("group_contrast", traits.Bool(output=False, optional=True, xor=['use_derivs']))
+
+        # Outputs
+        self.add_trait("con_images", OutputMultiPath(File(), optional=True, output=True))
+        self.add_trait("spmT_images ", OutputMultiPath(File(), optional=True, output=True))
+        self.add_trait("spmF_images", OutputMultiPath(File(), optional=True, output=True))
+        self.add_trait("out_spm_mat_file", File(output=True, copyfile=False))
+
+    def list_outputs(self):
+        process = spm.EstimateContrast()
+        print("ALLO")
+        if not self.spm_mat_file:
+            return {}
+        else:
+            process.inputs.spm_mat_file = self.spm_mat_file
+        print("contrasts", self.contrasts)
+        if not self.contrasts:
+            print('YOLOOO')
+            return {}
+        else:
+            process.inputs.contrasts = self.contrasts
+        print("beta_images", self.beta_images)
+        if not self.beta_images:
+            return {}
+        else:
+            process.inputs.beta_images = self.beta_images
+        print("ALLO")
+        if not self.residual_image:
+            return {}
+        else:
+            process.inputs.residual_image = self.residual_image
+
+        outputs = process._list_outputs()
+        print("OUTPUTS", outputs)
+        outputs["out_spm_mat_file"] = outputs.pop("spm_mat_file")
+        return outputs
+
+    def _run_process(self):
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        process = spm.EstimateContrast()
+        process.inputs.spm_mat_file = self.spm_mat_file
+        process.inputs.contrasts = self.contrasts
+        process.inputs.beta_images = self.beta_images
+        process.inputs.residual_image = self.residual_image
+        process.inputs.use_derivs = self.use_derivs
+        process.inputs.group_contrast = self.group_contrast
+        process.run()
+
+
