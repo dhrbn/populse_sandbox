@@ -888,7 +888,7 @@ class SPM_Level1Design(Process):
         # Inputs
         self.add_trait("timing_units", traits.Enum('scans', 'secs', use_default=True,
                                                    output=False, copyfile=False, optional=True))
-        self.add_trait("interscan_interval", traits.Float(3.0, output=False, use_default=True))
+        self.add_trait("interscan_interval", traits.Float(3.0, output=False, usedefault=True))
 
         self.add_trait("microtime_resolution", traits.Int(16, usedefault=True, output=False, optional=True))
         self.add_trait("microtime_onset", traits.Float(1.0, usedefault=True, output=False, optional=True))
@@ -908,6 +908,12 @@ class SPM_Level1Design(Process):
 
     def _run_process(self):
 
+        # Removing the spm_mat_file to avoid a bug
+        cur_dir = os.getcwd()
+        out_file = os.path.join(cur_dir, 'SPM.mat')
+        if os.path.isfile(out_file):
+            os.remove(out_file)
+
         spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
         process = spm.Level1Design()
@@ -925,9 +931,15 @@ class SPM_Level1Design(Process):
         #process.inputs.session_info = self.get_session_info()
         process.inputs.session_info = self.session_info
 
-        print(process._parse_inputs())
-
         process.run()
+
+        # Copying the generated SPM.mat file in the data directory
+        mask_image_folder, mask_image_name = os.path.split(self.mask_image)
+        from shutil import copy2
+        copy2(out_file, mask_image_folder)
+
+        if os.path.isfile(out_file):
+            os.remove(out_file)
 
     def get_session_info(self):
         from nipype.algorithms import modelgen
@@ -942,13 +954,65 @@ class SPM_Level1Design(Process):
         return s
 
     def list_outputs(self):
-
-        cur_dir = os.getcwd()
-        out_file = os.path.join(cur_dir, 'SPM.mat')
-        print(out_file)
+        # Copying the generated SPM.mat file in the data directory
+        mask_image_folder, mask_image_name = os.path.split(self.mask_image)
+        out_file = os.path.join(mask_image_folder, 'SPM.mat')
 
         d = {'spm_mat_file': out_file}
         return d
 
 
+class SPM_EstimateModel(Process):
 
+    def __init__(self):
+        super(SPM_EstimateModel, self).__init__()
+
+        # Inputs
+        self.add_trait("spm_mat_file", File(output=False, copyfile=True))
+        self.add_trait("estimation_method", traits.Dict(traits.Enum('Classical', 'Bayesian2', 'Bayesian'),
+                                                        output=False))
+        self.add_trait("write_residuals", traits.Bool(output=False, optional=True))
+        self.add_trait("flags", traits.Dict(output=False, optional=True))
+        self.add_trait("version", traits.String("spm12", output=False, optional=True))
+
+        # Outputs
+        self.add_trait("mask_image", ImageFileSPM(output=True, optional=True))
+        self.add_trait("beta_images", OutputMultiPath(output=True, optional=True))
+        self.add_trait("residual_image", ImageFileSPM(output=True, optional=True))
+        self.add_trait("residual_images", OutputMultiPath(output=True, optional=True))
+        self.add_trait("RPVimage", ImageFileSPM(output=True, optional=True))
+        self.add_trait("out_spm_mat_file", File(output=True))
+        self.add_trait("labels", ImageFileSPM(output=True, optional=True))
+        self.add_trait("SDerror", OutputMultiPath(ImageFileSPM(), output=True, optional=True))
+        self.add_trait("ARcoef", OutputMultiPath(ImageFileSPM(), output=True, optional=True))
+        self.add_trait("Cbetas", OutputMultiPath(ImageFileSPM(), output=True, optional=True))
+        self.add_trait("SDbetas", OutputMultiPath(ImageFileSPM(), output=True, optional=True))
+
+    def list_outputs(self):
+        process = spm.EstimateModel()
+        if not self.spm_mat_file:
+            return {}
+        else:
+            process.inputs.spm_mat_file = self.spm_mat_file
+        if not self.estimation_method:
+            return {}
+        else:
+            process.inputs.estimation_method = self.estimation_method
+        process.inputs.write_residuals = self.write_residuals
+        process.inputs.flags = self.flags
+
+        outputs = process._list_outputs()
+
+        outputs["out_spm_mat_file"] = outputs.pop("spm_mat_file")
+
+        return outputs
+
+    def _run_process(self):
+        process = spm.EstimateModel()
+        process.inputs.spm_mat_file = self.spm_mat_file
+        process.inputs.estimation_method = self.estimation_method
+        process.inputs.write_residuals = self.write_residuals
+        process.inputs.flags = self.flags
+        #process.inputs.version = self.version
+
+        process.run()
