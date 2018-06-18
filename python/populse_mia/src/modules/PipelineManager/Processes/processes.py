@@ -901,6 +901,7 @@ class SPM_Level1Design(Process):
         self.add_trait("volterra_expansion_order", traits.Int(1, output=False, optional=True))
         self.add_trait("global_intensity_normalization", traits.Enum('none', 'scaling', output=False, optional=True))
         self.add_trait("mask_image", traits.File(output=False, optional=True))
+        self.add_trait("mask_threshold", traits.Float(0.8, output=False, optional=True))
         self.add_trait("model_serial_correlations", traits.Enum('AR(1)', 'FAST', 'none', output=False, optional=True))
 
         # Output
@@ -926,6 +927,7 @@ class SPM_Level1Design(Process):
         process.inputs.volterra_expansion_order = self.volterra_expansion_order
         process.inputs.global_intensity_normalization = self.global_intensity_normalization
         process.inputs.mask_image = self.mask_image
+        process.inputs.mask_threshold = self.mask_threshold
         process.inputs.model_serial_correlations = self.model_serial_correlations
 
         #process.inputs.session_info = self.get_session_info()
@@ -1002,6 +1004,7 @@ class SPM_EstimateModel(Process):
         process.inputs.flags = self.flags
 
         outputs = process._list_outputs()
+        print("OUTPUT ESTIMATE MODEL", outputs)
 
         outputs["out_spm_mat_file"] = outputs.pop("spm_mat_file")
 
@@ -1013,7 +1016,6 @@ class SPM_EstimateModel(Process):
 
         process = spm.EstimateModel()
         process.inputs.spm_mat_file = self.spm_mat_file
-        # TODO: TEST
 
         # Removing the image files to avoid a bug
         outputs = self.list_outputs()
@@ -1051,23 +1053,18 @@ class SPM_EstimateContrast(Process):
 
     def list_outputs(self):
         process = spm.EstimateContrast()
-        print("ALLO")
         if not self.spm_mat_file:
             return {}
         else:
             process.inputs.spm_mat_file = self.spm_mat_file
-        print("contrasts", self.contrasts)
         if not self.contrasts:
-            print('YOLOOO')
             return {}
         else:
             process.inputs.contrasts = self.contrasts
-        print("beta_images", self.beta_images)
         if not self.beta_images:
             return {}
         else:
             process.inputs.beta_images = self.beta_images
-        print("ALLO")
         if not self.residual_image:
             return {}
         else:
@@ -1085,8 +1082,12 @@ class SPM_EstimateContrast(Process):
         process.inputs.contrasts = self.contrasts
         process.inputs.beta_images = self.beta_images
         process.inputs.residual_image = self.residual_image
-        process.inputs.use_derivs = self.use_derivs
-        process.inputs.group_contrast = self.group_contrast
+        if self.use_derivs is not None:
+            process.inputs.use_derivs = self.use_derivs
+        else:
+            if self.group_contrast is not None:
+                process.inputs.group_contrast = self.group_contrast
+            else:
+                process.inputs.use_derivs = False
         process.run()
-
 
