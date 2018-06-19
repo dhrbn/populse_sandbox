@@ -307,7 +307,7 @@ class SPM_Smooth(Process):
 
         self.smoothed_files = outputs["smoothed_files"]"""
 
-        return outputs
+        return outputs, self.in_files
 
     def _run_process(self):
 
