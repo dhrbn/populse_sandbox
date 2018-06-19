@@ -1071,7 +1071,6 @@ class SPM_EstimateContrast(Process):
             process.inputs.residual_image = self.residual_image
 
         outputs = process._list_outputs()
-        print("OUTPUTS", outputs)
         outputs["out_spm_mat_file"] = outputs.pop("spm_mat_file")
         return outputs
 
