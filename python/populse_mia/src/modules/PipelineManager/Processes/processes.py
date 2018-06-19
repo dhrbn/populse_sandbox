@@ -294,6 +294,9 @@ class SPM_Smooth(Process):
         else:
             process.inputs.in_files = self.in_files
 
+        if self.out_prefix:
+            process.inputs.out_prefix = self.out_prefix
+
         outputs = process._list_outputs()
 
         """raw_data_folder = os.path.join("data", "raw_data")
@@ -307,7 +310,21 @@ class SPM_Smooth(Process):
 
         self.smoothed_files = outputs["smoothed_files"]"""
 
-        return outputs, self.in_files
+        inheritance_dict = {}
+        for key, values in outputs.items():
+            if key == "smoothed_files":
+                for fullname in values:
+                    path, filename = os.path.split(fullname)
+                    if self.out_prefix:
+                        filename_without_prefix = filename[len(self.out_prefix):]
+                    else:
+                        filename_without_prefix = filename[len('s'):]
+
+                    if os.path.join(path, filename_without_prefix) in self.in_files:
+                        inheritance_dict[fullname] = os.path.join(path, filename_without_prefix)
+
+        print(inheritance_dict)
+        return outputs, inheritance_dict
 
     def _run_process(self):
 
