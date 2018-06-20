@@ -14,6 +14,8 @@ from Project.Filter import Filter
 import os
 from nipype.interfaces import spm
 from skimage.transform import resize
+import nibabel as nib
+
 
 # To change to 'run_spm12.sh_location MCR_folder script"
 matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
@@ -787,11 +789,7 @@ class Threshold(Process):
             file_name = file_name[0]
 
         # Image processing
-        import nibabel as nib
-        img = nib.load(file_name)
-        img_data = img.get_data()
-        img_thresh = (img_data > self.threshold).astype(float)
-        img_final = nib.Nifti1Image(img_thresh, img.affine, img.header)
+        img_final = threshold(file_name, self.threshold)
 
         # Image save
         path, file_name = os.path.split(file_name)
@@ -811,7 +809,7 @@ class Resize(Process):
         self.add_trait("mask_to_resize", InputMultiPath(traits.Either(
             ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
         self.add_trait("suffix", traits.String("_003", output=False, optional=True))
-        self.add_trait("prefix", traits.String("", output=False, optional=True))
+        self.add_trait("prefix", traits.String(" ", output=False, optional=True))
         self.add_trait("interp", traits.Int(1, output=False, optional=True))
 
         # Output
@@ -822,11 +820,11 @@ class Resize(Process):
         if not self.mask_to_resize:
             return {}
 
-        if not self.suffix:
-            self.suffix = ""
+        if not self.suffix or self.suffix in [Undefined, "<undefined>"]:
+            self.suffix = " "
 
-        if not self.prefix:
-            self.prefix = ""
+        if not self.prefix or self.prefix in [Undefined, "<undefined>"]:
+            self.prefix = " "
 
         mask_name = self.mask_to_resize
         if type(mask_name) in [list, TraitListObject]:
@@ -836,7 +834,7 @@ class Resize(Process):
         file_name_no_ext, file_extension = os.path.splitext(file_name)
         if file_name_no_ext[-4:] == "_002":
             file_name_no_ext = file_name_no_ext[:-4]
-        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
+        out_file = os.path.join(path, self.prefix.strip() + file_name_no_ext + self.suffix.strip() + file_extension)
 
         d = {'out_file': out_file}
         return d
@@ -862,11 +860,11 @@ class Resize(Process):
         if type(ref_name) in [list, TraitListObject]:
             ref_name = ref_name[0]
 
-        if not self.suffix:
-            self.suffix = ""
+        if not self.suffix or self.suffix in [Undefined, "<undefined>"]:
+            self.suffix = " "
 
-        if not self.prefix:
-            self.prefix = ""
+        if not self.prefix or self.prefix in [Undefined, "<undefined>"]:
+            self.prefix = " "
 
         # Image processing
         import nibabel as nib
@@ -893,7 +891,7 @@ class Resize(Process):
         file_name_no_ext, file_extension = os.path.splitext(file_name)
         if file_name_no_ext[-4:] == "_002":
             file_name_no_ext = file_name_no_ext[:-4]
-        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
+        out_file = os.path.join(path, self.prefix.strip() + file_name_no_ext + self.suffix.strip() + file_extension)
         nib.save(mask_final, out_file)
 
 
@@ -1137,3 +1135,225 @@ class ROI_List_Generator(Process):
                 out_list.append([elm_pos, elm_hemi])
 
         self.roi_list = out_list
+
+
+class Conv_ROI(Process):
+
+    def __init__(self):
+        super(Conv_ROI, self).__init__()
+
+        # Inputs
+        self.add_trait("roi_list", traits.List(output=False))
+        self.add_trait("mask", File(output=False))
+
+        # Outputs
+        self.add_trait("out_masks", OutputMultiPath(output=True))
+
+    def list_outputs(self):
+        if not self.roi_list:
+            return {}
+        if not self.mask:
+            return {}
+
+        roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        if not os.path.isdir(os.path.join(roi_dir, 'convROI_BOLD')):
+            os.mkdir(os.path.join(roi_dir, 'convROI_BOLD'))
+
+        conv_dir = os.path.join(roi_dir, 'convROI_BOLD')
+        list_out = []
+
+        for roi in self.roi_list:
+            list_out.append(os.path.join(conv_dir, 'conv' + roi[0] + roi[1] + '.nii'))
+
+        return {"out_masks": list_out}, {}
+
+    def _run_process(self):
+
+        roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        conv_dir = os.path.join(roi_dir, 'convROI_BOLD')
+
+        # Resizing the mask to the size of the ROIs
+        roi_1 = self.roi_list[0]
+        roi_file = os.path.join(roi_dir, roi_1[0] + roi_1[1] + '.nii')
+        roi_img = nib.load(roi_file)
+        roi_data = roi_img.get_data()
+        roi_size = roi_data.shape[:3]
+
+        mask_thresh = threshold(self.mask, 0.5).get_data()
+        resized_mask = resize(mask_thresh, roi_size)
+
+        for roi in self.roi_list:
+            roi_file = os.path.join(roi_dir, roi[0] + roi[1] + '.nii')
+            roi_img = nib.load(roi_file)
+            roi_data = roi_img.get_data()
+            mult = (roi_data * resized_mask).astype(float)
+            # TODO: Should we take ino from ROI or from the mask ?
+            mult_img = nib.Nifti1Image(mult, roi_img.affine, roi_img.header)
+
+            # Image save
+            out_file = os.path.join(conv_dir, 'conv' + roi[0] + roi[1] + '.nii')
+            nib.save(mult_img, out_file)
+
+            print('{0} saved'.format(os.path.basename(out_file)))
+
+
+class Conv_ROI2(Process):
+
+    def __init__(self):
+        super(Conv_ROI2, self).__init__()
+
+        # Inputs
+        self.add_trait("roi_list", traits.List(output=False))
+        self.add_trait("mask", File(output=False))
+
+        # Outputs
+        self.add_trait("out_masks2", OutputMultiPath(output=True))
+
+    def list_outputs(self):
+        if not self.roi_list:
+            return {}
+        if not self.mask:
+            return {}
+
+        roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        if not os.path.isdir(os.path.join(roi_dir, 'convROI_BOLD2')):
+            os.mkdir(os.path.join(roi_dir, 'convROI_BOLD2'))
+
+        conv_dir = os.path.join(roi_dir, 'convROI_BOLD2')
+        list_out = []
+
+        for roi in self.roi_list:
+            list_out.append(os.path.join(conv_dir, 'conv' + roi[0] + roi[1] + '2.nii'))
+
+        return {"out_masks2": list_out}, {}
+
+    def _run_process(self):
+
+        roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        conv_dir = os.path.join(roi_dir, 'convROI_BOLD')
+        conv_dir2 = os.path.join(roi_dir, 'convROI_BOLD2')
+
+        # Setting ROIs to the resolution of the functional
+        mask = nib.load(self.mask).get_data()
+        mask_size = mask.shape[:3]
+
+        for roi in self.roi_list:
+            roi_file = os.path.join(conv_dir, 'conv' + roi[0] + roi[1] + '.nii')
+            roi_img = nib.load(roi_file)
+            roi_data = roi_img.get_data()
+            resized_roi = resize(roi_data, mask_size)
+            resized_img = nib.Nifti1Image(resized_roi, roi_img.affine, roi_img.header)
+
+            # Image save
+            out_file = os.path.join(conv_dir2, 'conv' + roi[0] + roi[1] + '2.nii')
+            nib.save(resized_img, out_file)
+
+            print('{0} saved'.format(os.path.basename(out_file)))
+
+
+class Write_results(Process):
+
+    def __init__(self):
+        super(Write_results, self).__init__()
+
+        # Inputs
+        self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
+        self.add_trait("roi_list", traits.List(output=False))
+
+        # Outputs
+        self.add_trait("mean_out_files", traits.List(traits.File(), output=True))
+        self.add_trait("std_out_files", traits.List(traits.File(), output=True))
+
+    def list_outputs(self):
+        if not self.roi_list:
+            return {}
+        if not self.parametric_maps:
+            return {}
+
+        roi_dir = os.path.join(os.path.dirname(self.parametric_maps[0]), 'roi')
+        conv_dir = os.path.join(roi_dir, 'convROI_BOLD')
+        analysis_dir = os.path.join(roi_dir, 'ROI_analysis')
+
+        if not os.path.isdir(conv_dir):
+            print("No 'convROI_BOLD' folder in the working directory {0}.".
+                  format(os.path.dirname(self.parametric_maps[0])))
+            return {}
+
+        if not os.path.isdir(analysis_dir):
+            os.mkdir(analysis_dir)
+
+        mean_out_files = []
+        std_out_files = []
+
+        for parametric_map in self.parametric_maps:
+            for roi in self.roi_list:
+                map_name = os.path.basename(parametric_map)[0:4] + '_BOLD'  # spmT_BOLD or beta_BOLD
+                mean_out_files.append(os.path.join(analysis_dir, roi[0] + roi[1] + '_mean' + map_name + '.txt'))
+                std_out_files.append(os.path.join(analysis_dir, roi[0] + roi[1] + '_std' + map_name + '.txt'))
+
+        return {"mean_out_files": mean_out_files, "std_out_files": std_out_files}, {}
+
+    def _run_process(self):
+
+        roi_dir = os.path.join(os.path.dirname(self.parametric_maps[0]), 'roi')
+        conv_dir = os.path.join(roi_dir, 'convROI_BOLD')
+        analysis_dir = os.path.join(roi_dir, 'ROI_analysis')
+
+        if not os.path.isdir(conv_dir):
+            print("No 'convROI_BOLD' folder in the working directory {0}.".
+                  format(os.path.dirname(self.parametric_maps[0])))
+            return
+
+        for parametric_map in self.parametric_maps:
+
+            roi_1 = self.roi_list[0]
+            roi_file = os.path.join(roi_dir, roi_1[0] + roi_1[1] + '.nii')
+            roi_img = nib.load(roi_file)
+            roi_data = roi_img.get_data()
+            roi_size = roi_data.shape[:3]
+
+            # Reading parametric map
+            map_img = nib.load(parametric_map)
+            map_data = map_img.get_data()
+
+            # Making sure that the image are at the same size
+            if roi_size != map_data.shape[:3]:
+                map_data_max = max(map_data.max(), -map_data.min())
+                map_data = resize(map_data/map_data_max, roi_size) * map_data_max
+
+            for roi in self.roi_list:
+
+                # Reading ROI file
+                roi_file = os.path.join(conv_dir, 'conv' + roi[0] + roi[1] + '.nii')
+                roi_img = nib.load(roi_file)
+                roi_data = roi_img.get_data()
+
+                # Convolving the parametric map with the ROI
+                roi_thresh = (roi_data > 0).astype(float)
+                result = map_data * roi_thresh
+
+                # Calculating mean and standard deviation
+                mean_result = result[result.nonzero()].mean()
+                std_result = result[result.nonzero()].std()
+
+                # Writing the value in the corresponding file
+                map_name = os.path.basename(parametric_map)[0:4] + '_BOLD'  # spmT_BOLD or beta_BOLD
+
+                mean_out_file = os.path.join(analysis_dir, roi[0] + roi[1] + '_mean' + map_name + '.txt')
+                with open(mean_out_file, 'w') as f:
+                    f.write("%.3f" % mean_result)
+
+                std_out_file = os.path.join(analysis_dir, roi[0] + roi[1] + '_std' + map_name + '.txt')
+                with open(std_out_file, 'w') as f:
+                    f.write("%.3f" % std_result)
+
+                print('{0} saved'.format(mean_out_file))
+                print('{0} saved'.format(std_out_file))
+
+
+def threshold(file_name, thresh):
+    img = nib.load(file_name)
+    img_data = img.get_data()
+    img_thresh = (img_data > thresh).astype(float)
+    img_final = nib.Nifti1Image(img_thresh, img.affine, img.header)
+    return img_final
