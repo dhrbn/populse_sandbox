@@ -1107,3 +1107,33 @@ class SPM_EstimateContrast(Process):
                 process.inputs.use_derivs = False
         process.run()
 
+
+class ROI_List_Generator(Process):
+
+    def __init__(self):
+        super(ROI_List_Generator, self).__init__()
+
+        list_pos = ['ROI_OCC', 'ROI_PAR', 'ROI_TEMP', 'ROI_INSULA', 'ROI_FRON', 'ROI_CING', 'ROI_THA',
+                    'ROI_STR', 'ACP', 'ACA', 'ACM', 'PICA', 'SCA']
+
+        # Inputs
+        self.add_trait("pos", traits.List(list_pos, output=False))
+        self.add_trait("hemi", traits.List(['_L', '_R'], output=False))
+
+        # Output
+        self.add_trait("roi_list", traits.List(output=True))
+
+    def list_outputs(self):
+        out_list = []
+        for elm_pos in self.pos:
+            for elm_hemi in self.hemi:
+                out_list.append([elm_pos, elm_hemi])
+        return {"roi_list": out_list}, {}
+
+    def _run_process(self):
+        out_list = []
+        for elm_pos in self.pos:
+            for elm_hemi in self.hemi:
+                out_list.append([elm_pos, elm_hemi])
+
+        self.roi_list = out_list
