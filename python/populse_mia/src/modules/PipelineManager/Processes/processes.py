@@ -15,6 +15,7 @@ import os
 from nipype.interfaces import spm
 from skimage.transform import resize
 import nibabel as nib
+import numpy as np
 
 
 # To change to 'run_spm12.sh_location MCR_folder script"
@@ -1316,6 +1317,9 @@ class Write_results(Process):
             map_img = nib.load(parametric_map)
             map_data = map_img.get_data()
 
+            # Setting the NaN to 0
+            map_data = np.nan_to_num(map_data)
+
             # Making sure that the image are at the same size
             if roi_size != map_data.shape[:3]:
                 map_data_max = max(map_data.max(), -map_data.min())
@@ -1328,13 +1332,21 @@ class Write_results(Process):
                 roi_img = nib.load(roi_file)
                 roi_data = roi_img.get_data()
 
+                # Making sure that the image are at the same size
+                roi_data = np.nan_to_num(roi_data)
+
                 # Convolving the parametric map with the ROI
                 roi_thresh = (roi_data > 0).astype(float)
                 result = map_data * roi_thresh
 
                 # Calculating mean and standard deviation
-                mean_result = result[result.nonzero()].mean()
-                std_result = result[result.nonzero()].std()
+                if np.size(result[result.nonzero()]) == 0:
+                    print("Warning: No data found in ROI {0}".format(roi[0] + roi[1]))
+                    mean_result = 0
+                    std_result = 0
+                else:
+                    mean_result = result[result.nonzero()].mean()
+                    std_result = result[result.nonzero()].std()
 
                 # Writing the value in the corresponding file
                 map_name = os.path.basename(parametric_map)[0:4] + '_BOLD'  # spmT_BOLD or beta_BOLD
@@ -1347,8 +1359,7 @@ class Write_results(Process):
                 with open(std_out_file, 'w') as f:
                     f.write("%.3f" % std_result)
 
-                print('{0} saved'.format(mean_out_file))
-                print('{0} saved'.format(std_out_file))
+            print('{0} ROI files saved'.format(map_name))
 
 
 def threshold(file_name, thresh):
