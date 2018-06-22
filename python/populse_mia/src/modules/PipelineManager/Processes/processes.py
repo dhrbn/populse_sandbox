@@ -18,8 +18,23 @@ import nibabel as nib
 
 
 # To change to 'run_spm12.sh_location MCR_folder script"
-matlab_cmd = '/home/david/spm12/run_spm12.sh /usr/local/MATLAB/MATLAB_Runtime/v93/ script'
+from SoftwareProperties.Config import Config
 
+config = Config()
+spm_path = config.get_spm_path()
+matlab_path = config.get_matlab_path()
+matlab_cmd = '{0}/run_spm12.sh {1}/ script'.format(spm_path, matlab_path)
+
+def refresh_matlab_command():
+    """
+    Refresh SPM and MatLab paths
+    """
+
+    global  matlab_cmd
+    config = Config()
+    spm_path = config.get_spm_path()
+    matlab_path = config.get_matlab_path()
+    matlab_cmd = '{0}/run_spm12.sh {1}/ script'.format(spm_path, matlab_path)
 
 def check_inputs(input_value):
     if input_value is not None:
@@ -325,7 +340,6 @@ class SPM_Smooth(Process):
                     if os.path.join(path, filename_without_prefix) in self.in_files:
                         inheritance_dict[fullname] = os.path.join(path, filename_without_prefix)
 
-        print(inheritance_dict)
         return outputs, inheritance_dict
 
     def _run_process(self):
