@@ -290,7 +290,7 @@ class Populse_Filter(Process):
 
 class SPM_Smooth(Process):
 
-    def __init__(self):
+    def __init__(self, database=None):
         super(SPM_Smooth, self).__init__()
 
         # Inputs
@@ -1560,9 +1560,6 @@ class Grattefile(Process):
 
                             roi_checked.append(roi[0])
 
-
-
-
 class BOLD_disp(Process):
     """
     BOLD_disp(Patient, plane, tranche, tresh, native, tranche_native)
@@ -1598,7 +1595,7 @@ class BOLD_disp(Process):
         pass
 
     def _run_process(self):
-        verbose = True
+        verbose = False
         function_inputs = ["Patient", "plane", "tranche", "tresh", "native", "tranche_native",
                            "dir_data", "dir_result", "dir_jpg", "todo"]
         # Loading mat files
@@ -1622,7 +1619,7 @@ class BOLD_disp(Process):
             matlab_script += 'disp(pwd);'
         matlab_script += 'addpath("{0}");'.format(head)
 
-        # TEST: Adding the real path
+        # Adding the real path for display functions
         eric_path = '/home/david/Resultats_Pipeline_Eric/FICHIERS_FINAUX/IRMAGE_matlab_scripts/working_batchs/display/display_slices'
         matlab_script += 'addpath("{0}");'.format(eric_path)
 
@@ -1648,6 +1645,134 @@ class BOLD_disp(Process):
         print(matlab_script)
         test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
 
+
+class ANAT_disp(Process):
+
+    def __init__(self):
+        super(ANAT_disp, self).__init__()
+
+        # Inputs have to be .mat files
+        self.add_trait("matlab_function", traits.File(output=False))
+        self.add_trait("Patient", traits.File(output=False))
+        self.add_trait("plane", traits.File(output=False))
+        self.add_trait("tranche_native", traits.File(output=False))
+        self.add_trait("output_directory", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_data", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_result", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_jpg", traits.Directory(output=False, optional=True))
+        self.add_trait("todo", traits.File(output=False, optional=True))
+
+    def list_outputs(self):
+        pass
+
+    def _run_process(self):
+        verbose = False
+        function_inputs = ["Patient", "plane", "tranche_native", "dir_data", "dir_result", "dir_jpg", "todo"]
+        # Loading mat files
+        matlab_script = ""
+        for attribute in function_inputs:
+            file_name = getattr(self, attribute)
+            matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
+            if attribute in ["dir_data", "dir_result", "dir_jpg", "todo"]:
+                matlab_script += 'global {0};'.format(attribute)
+            if verbose:
+                matlab_script += 'disp("{0} loaded");disp({1});'.format(attribute, attribute)
+
+        # Checking if there is an output directory
+        if hasattr(self, "output_directory"):
+            if self.output_directory:
+                matlab_script += 'cd("{0}");'.format(self.output_directory)
+
+        # Adding the function path
+        head, tail = os.path.split(self.matlab_function)
+        if verbose:
+            matlab_script += 'disp(pwd);'
+        matlab_script += 'addpath("{0}");'.format(head)
+
+        # Adding the real path for display functions
+        eric_path = '/home/david/Resultats_Pipeline_Eric/FICHIERS_FINAUX/IRMAGE_matlab_scripts/working_batchs/display/display_slices'
+        matlab_script += 'addpath("{0}");'.format(eric_path)
+
+        # Adding spm to Matlab path
+        spm_path = "/home/david/code_matlab/spm12"
+        matlab_script += 'addpath("{0}");'.format(spm_path)
+
+        function_name = os.path.splitext(tail)[0]
+
+        # Calling the function
+        matlab_script += '{0}({1},{2},{3});'.format(function_name,
+                                                    "Patient",
+                                                    "plane",
+                                                    "tranche_native")
+
+        # Exiting Matlab
+        matlab_script += 'exit'
+
+        # Running the function
+        print(matlab_script)
+        test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
+
+
+class Timecourse_fullTask(Process):
+
+    def __init__(self):
+        super(Timecourse_fullTask, self).__init__()
+
+        # Inputs have to be .mat files
+        self.add_trait("matlab_function", traits.File(output=False))
+        self.add_trait("Patient", traits.File(output=False))
+        self.add_trait("output_directory", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_data", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_result", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_jpg", traits.Directory(output=False, optional=True))
+        self.add_trait("todo", traits.File(output=False, optional=True))
+
+    def list_outputs(self):
+        pass
+
+    def _run_process(self):
+        verbose = True
+        function_inputs = ["Patient", "dir_data", "dir_result", "dir_jpg", "todo"]
+        # Loading mat files
+        matlab_script = ""
+        for attribute in function_inputs:
+            file_name = getattr(self, attribute)
+            matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
+            if attribute in ["dir_data", "dir_result", "dir_jpg", "todo", "Patient"]:
+                matlab_script += 'global {0};'.format(attribute)
+            if verbose:
+                matlab_script += 'disp("{0} loaded");disp({1});'.format(attribute, attribute)
+
+        # Checking if there is an output directory
+        if hasattr(self, "output_directory"):
+            if self.output_directory:
+                matlab_script += 'cd("{0}");'.format(self.output_directory)
+
+        # Adding the function path
+        head, tail = os.path.split(self.matlab_function)
+        if verbose:
+            matlab_script += 'disp(pwd);'
+        matlab_script += 'addpath("{0}");'.format(head)
+
+        # Adding the real path for display functions
+        eric_path = '/home/david/Resultats_Pipeline_Eric/FICHIERS_FINAUX/IRMAGE_matlab_scripts/working_batchs/display/display_slices'
+        matlab_script += 'addpath("{0}");'.format(eric_path)
+
+        # Adding spm to Matlab path
+        spm_path = "/home/david/code_matlab/spm12"
+        matlab_script += 'addpath("{0}");'.format(spm_path)
+
+        function_name = os.path.splitext(tail)[0]
+
+        # Calling the function
+        matlab_script += '{0};'.format(function_name)
+
+        # Exiting Matlab
+        matlab_script += 'exit'
+
+        # Running the function
+        test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
+        # test = subprocess.run(['matlab', '-r', matlab_script])
 
 
 def threshold(file_name, thresh):
