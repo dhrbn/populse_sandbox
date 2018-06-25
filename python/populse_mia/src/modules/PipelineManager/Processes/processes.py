@@ -15,6 +15,7 @@ import os
 from nipype.interfaces import spm
 from skimage.transform import resize
 import nibabel as nib
+import numpy as np
 
 
 # To change to 'run_spm12.sh_location MCR_folder script"
@@ -1330,6 +1331,10 @@ class Write_results(Process):
             map_img = nib.load(parametric_map)
             map_data = map_img.get_data()
 
+            # Setting the NaN to 0
+            map_data = np.nan_to_num(map_data)
+            map_name = os.path.basename(parametric_map)[0:4] + '_BOLD'  # spmT_BOLD or beta_BOLD
+
             # Making sure that the image are at the same size
             if roi_size != map_data.shape[:3]:
                 map_data_max = max(map_data.max(), -map_data.min())
@@ -1342,16 +1347,23 @@ class Write_results(Process):
                 roi_img = nib.load(roi_file)
                 roi_data = roi_img.get_data()
 
-                # Convolving the parametric map with the ROI
+                # Making sure that the image are at the same size
+                roi_data = np.nan_to_num(roi_data)
+
+                # Convolution of the parametric map with the ROI
                 roi_thresh = (roi_data > 0).astype(float)
                 result = map_data * roi_thresh
 
                 # Calculating mean and standard deviation
-                mean_result = result[result.nonzero()].mean()
-                std_result = result[result.nonzero()].std()
+                if np.size(result[result.nonzero()]) == 0:
+                    print("Warning: No data found in ROI {0}".format(roi[0] + roi[1]))
+                    mean_result = 0
+                    std_result = 0
+                else:
+                    mean_result = result[result.nonzero()].mean()
+                    std_result = result[result.nonzero()].std()
 
                 # Writing the value in the corresponding file
-                map_name = os.path.basename(parametric_map)[0:4] + '_BOLD'  # spmT_BOLD or beta_BOLD
 
                 mean_out_file = os.path.join(analysis_dir, roi[0] + roi[1] + '_mean' + map_name + '.txt')
                 with open(mean_out_file, 'w') as f:
@@ -1361,8 +1373,185 @@ class Write_results(Process):
                 with open(std_out_file, 'w') as f:
                     f.write("%.3f" % std_result)
 
-                print('{0} saved'.format(mean_out_file))
-                print('{0} saved'.format(std_out_file))
+            print('{0} ROI files saved'.format(map_name))
+
+
+class Grattefile(Process):
+
+    def __init__(self):
+        super(Grattefile, self).__init__()
+
+        # Inputs
+        self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
+        self.add_trait("data", traits.String("BOLD", output=False, optional=True))
+        self.add_trait("calculs", traits.List(["mean", "std", "IL_mean", "IL_std"], output=False, optional=True))
+        self.add_trait("mean_in_files", traits.List(traits.File(), output=False))
+        self.add_trait("std_in_files", traits.List(traits.File(), output=False))
+        self.add_trait("roi_list", traits.List(output=False))
+        self.add_trait("patient_info", traits.Dict(output=False))
+
+        # Outputs
+        self.add_trait("out_files", traits.List(traits.File(), output=True))
+
+    def list_outputs(self):
+        if not self.calculs:
+            return {}
+        if not self.parametric_maps:
+            return {}
+
+        roi_dir = os.path.join(os.path.dirname(self.parametric_maps[0]), 'roi')
+        analysis_dir = os.path.join(roi_dir, 'ROI_analysis')
+
+        if not os.path.isdir(analysis_dir):
+            print("No 'ROI_analysis' folder in the working directory {0}.".
+                  format(os.path.dirname(self.parametric_maps[0])))
+            return {}
+
+        out_files = []
+        for parametric_map in self.parametric_maps:
+            for calcul in self.calculs:
+                out_files.append(os.path.join
+                                 (analysis_dir,
+                                  "{0}_{1}_{2}.xls".format(self.data, calcul,
+                                                           os.path.basename(parametric_map)[0:4])))
+                
+        return {"out_files": out_files}, {}
+
+    def _run_process(self):
+
+        # Getting the list of all positions (roi_list without hemisphere)
+        pos_list = []
+        for roi in self.roi_list:
+            pos = roi[0]
+            if pos not in pos_list:
+                pos_list.append(pos)
+
+        roi_dir = os.path.join(os.path.dirname(self.parametric_maps[0]), 'roi')
+        analysis_dir = os.path.join(roi_dir, 'ROI_analysis')
+
+        if not os.path.isdir(analysis_dir):
+            print("No 'ROI_analysis' folder in the working directory {0}.".
+                  format(os.path.dirname(self.parametric_maps[0])))
+            return {}
+
+        for parametric_map in self.parametric_maps:
+            map_name = os.path.basename(parametric_map)[0:4]
+            for calcul in self.calculs:
+                out_file = os.path.join(analysis_dir,
+                                        "{0}_{1}_{2}.xls".format(self.data, calcul, map_name))
+
+                with open(out_file, 'w') as f:
+                    f.write("{0}\t".format('subjects'))
+                    f.write("{0}\t".format('patho'))
+                    f.write("{0}\t".format('age'))
+                    f.write("{0}\t".format('sex'))
+                    f.write("{0}\t".format('MR'))
+                    f.write("{0}\t".format('Gaz'))
+                    f.write("{0}\t".format('Admin'))
+
+                    if calcul not in ['IL_mean', 'IL_std']:
+                        for roi in self.roi_list:
+                            f.write("{0}_{1}\t".format(map_name, roi[0] + roi[1]))
+                    else:
+                        for pos in pos_list:
+                            f.write("{0}_{1}\t".format(map_name, pos))
+
+                    # We should iterate on each patient here
+                    f.write("\n{0}\t".format(self.patient_info["name"]))
+                    if "patho" in self.patient_info.keys():
+                        f.write("{0}\t".format(self.patient_info["patho"]))
+                    else:
+                        f.write("\t")
+                    if "age" in self.patient_info.keys():
+                        f.write("%3.1f\t" % self.patient_info["age"])
+                    else:
+                        f.write("\t")
+                    if "sex" in self.patient_info.keys():
+                        f.write("{0}\t".format(self.patient_info["sex"]))
+                    else:
+                        f.write("\t")
+                    if "mr" in self.patient_info.keys():
+                        f.write("{0}\t".format(self.patient_info["mr"]))
+                    else:
+                        f.write("\t")
+                    if "gas" in self.patient_info.keys():
+                        f.write("{0}\t".format(self.patient_info["gas"]))
+                    else:
+                        f.write("\t")
+                    if "admin" in self.patient_info.keys():
+                        f.write("{0}\t".format(self.patient_info["admin"]))
+                    else:
+                        f.write("\t")
+
+                    if calcul == 'mean':
+                        for roi in self.roi_list:
+                            roi_file = os.path.join(analysis_dir, "{0}_mean{1}.txt".format(roi[0] + roi[1], map_name))
+                            with open(roi_file, 'r') as f_read:
+                                final_res = float(f_read.read())
+                            f.write("{0}\t".format(final_res))
+
+                    elif calcul == 'IL_mean':
+                        roi_checked = []
+                        for roi in self.roi_list:
+                            if roi[0] in roi_checked:
+                                continue
+                            roi_file = os.path.join(analysis_dir, "{0}_mean{1}.txt".format(roi[0] + roi[1], map_name))
+                            with open(roi_file, 'r') as f_read:
+                                roi_value = float(f_read.read())
+
+                            # Searching the roi that has the same first element
+                            roi_2 = [s for s in self.roi_list if roi[0] in s[0] and roi[1] != s[1]][0]
+                            roi_file_2 = os.path.join(analysis_dir,
+                                                      "{0}_mean{1}.txt".format(roi_2[0] + roi_2[1], map_name))
+                            with open(roi_file_2, 'r') as f_read:
+                                roi_value_2 = float(f_read.read())
+
+                            if roi[1] == '_L':
+                                sub_1 = roi_value
+                                sub_2 = roi_value_2
+                            else:
+                                sub_1 = roi_value_2
+                                sub_2 = roi_value
+
+                            final_res = (sub_1 - sub_2) / (sub_1 + sub_2)
+                            f.write("{0}\t".format(final_res))
+
+                            roi_checked.append(roi[0])
+
+                    elif calcul == "std":
+                        for roi in self.roi_list:
+                            roi_file = os.path.join(analysis_dir, "{0}_std{1}.txt".format(roi[0] + roi[1], map_name))
+                            with open(roi_file, 'r') as f_read:
+                                final_res = float(f_read.read())
+                            f.write("{0}\t".format(final_res))
+
+                    elif calcul == 'IL_std':
+                        roi_checked = []
+                        for roi in self.roi_list:
+                            if roi[0] in roi_checked:
+                                continue
+                            roi_file = os.path.join(analysis_dir, "{0}_std{1}.txt".format(roi[0] + roi[1], map_name))
+                            with open(roi_file, 'r') as f_read:
+                                roi_value = float(f_read.read())
+
+                            # Searching the roi that has the same first element
+                            roi_2 = [s for s in self.roi_list if roi[0] in s[0] and roi[1] != s[1]][0]
+                            roi_file_2 = os.path.join(analysis_dir,
+                                                      "{0}_std{1}.txt".format(roi_2[0] + roi_2[1], map_name))
+                            with open(roi_file_2, 'r') as f_read:
+                                roi_value_2 = float(f_read.read())
+
+                            if roi[1] == '_L':
+                                sub_1 = roi_value
+                                sub_2 = roi_value_2
+                            else:
+                                sub_1 = roi_value_2
+                                sub_2 = roi_value
+
+                            final_res = (sub_1 - sub_2) / (sub_1 + sub_2)
+                            f.write("{0}\t".format(final_res))
+
+                            roi_checked.append(roi[0])
 
 
 def threshold(file_name, thresh):
