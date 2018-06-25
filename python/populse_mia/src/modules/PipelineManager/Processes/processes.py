@@ -16,6 +16,7 @@ from nipype.interfaces import spm
 from skimage.transform import resize
 import nibabel as nib
 import numpy as np
+import subprocess
 
 
 # To change to 'run_spm12.sh_location MCR_folder script"
@@ -1559,6 +1560,95 @@ class Grattefile(Process):
                             f.write("{0}\t".format(final_res))
 
                             roi_checked.append(roi[0])
+
+
+
+
+class BOLD_disp(Process):
+    """
+    BOLD_disp(Patient, plane, tranche, tresh, native, tranche_native)
+    Patient: Patient cell array.
+    plane: axial, coronal or sagittal (mandatory parameter).
+    tranche: First_plane:step:last_plane (mandatory parameter)
+    tresh: Y (to change threshold in the parametric maps) or N (mandatory parameter)
+    native: Y or N. If Y: generation of the 1st dynamic native image (mandatory parameter)
+    tranche_native: If native = Y, tranche_native is used for the imagegeneration (only mandatory if native = Y)
+    Example:
+    BOLD_disp(Pat, 'axial', -50:5:65, Pat{1}.Thresholding, 'Y',-50:5:70)
+    BOLD_disp(Pat,'coronal',-80:5:30, 'N', 'N')
+    BOLD_disp(Pat,'sagittal',-60:2:-32, Pat{1}.Thresholding, 'N')
+    """
+    def __init__(self):
+        super(BOLD_disp, self).__init__()
+
+        # Inputs have to be .mat files
+        self.add_trait("matlab_function", traits.File(output=False))
+        self.add_trait("Patient", traits.File(output=False))
+        self.add_trait("plane", traits.File(output=False))
+        self.add_trait("tranche", traits.File(output=False))
+        self.add_trait("tresh", traits.File(output=False))
+        self.add_trait("native", traits.File(output=False))
+        self.add_trait("tranche_native", traits.File(output=False))
+        self.add_trait("output_directory", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_data", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_result", traits.Directory(output=False, optional=True))
+        self.add_trait("dir_jpg", traits.Directory(output=False, optional=True))
+        self.add_trait("todo", traits.File(output=False, optional=True))
+
+    def list_outputs(self):
+        pass
+
+    def _run_process(self):
+        verbose = True
+        function_inputs = ["Patient", "plane", "tranche", "tresh", "native", "tranche_native",
+                           "dir_data", "dir_result", "dir_jpg", "todo"]
+        # Loading mat files
+        matlab_script = ""
+        for attribute in function_inputs:
+            file_name = getattr(self, attribute)
+            matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
+            if attribute in ["dir_data", "dir_result", "dir_jpg", "todo"]:
+                matlab_script += 'global {0};'.format(attribute)
+            if verbose:
+                matlab_script += 'disp("{0} loaded");disp({1});'.format(attribute, attribute)
+
+        # Checking if there is an output directory
+        if hasattr(self, "output_directory"):
+            if self.output_directory:
+                matlab_script += 'cd("{0}");'.format(self.output_directory)
+
+        # Adding the function path
+        head, tail = os.path.split(self.matlab_function)
+        if verbose:
+            matlab_script += 'disp(pwd);'
+        matlab_script += 'addpath("{0}");'.format(head)
+
+        # TEST: Adding the real path
+        eric_path = '/home/david/Resultats_Pipeline_Eric/FICHIERS_FINAUX/IRMAGE_matlab_scripts/working_batchs/display/display_slices'
+        matlab_script += 'addpath("{0}");'.format(eric_path)
+
+        # Adding spm to Matlab path
+        spm_path = "/home/david/code_matlab/spm12"
+        matlab_script += 'addpath("{0}");'.format(spm_path)
+
+        function_name = os.path.splitext(tail)[0]
+
+        # Calling the function
+        matlab_script += '{0}({1},{2},{3},{4},{5},{6});'.format(function_name,
+                                                                "Patient",
+                                                                "plane",
+                                                                "tranche",
+                                                                "tresh",
+                                                                "native",
+                                                                "tranche_native")
+
+        # Exiting Matlab
+        matlab_script += 'exit'
+
+        # Running the function
+        print(matlab_script)
+        test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
+
 
 
 def threshold(file_name, thresh):
