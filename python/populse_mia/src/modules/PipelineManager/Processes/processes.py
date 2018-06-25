@@ -1413,7 +1413,7 @@ class Grattefile(Process):
                 out_files.append(os.path.join
                                  (analysis_dir,
                                   "{0}_{1}_{2}.xls".format(self.data, calcul,
-                                                           os.path.basename(parametric_map)[0:4])))
+                                                           os.path.basename(parametric_map)[0:9])))
                 
         return {"out_files": out_files}, {}
 
@@ -1435,10 +1435,11 @@ class Grattefile(Process):
             return {}
 
         for parametric_map in self.parametric_maps:
-            map_name = os.path.basename(parametric_map)[0:4]
+            map_name_file = os.path.basename(parametric_map)[0:9]
+            map_name = map_name_file[0:4]
             for calcul in self.calculs:
                 out_file = os.path.join(analysis_dir,
-                                        "{0}_{1}_{2}.xls".format(self.data, calcul, map_name))
+                                        "{0}_{1}_{2}.xls".format(self.data, calcul, map_name_file))
 
                 with open(out_file, 'w') as f:
                     f.write("{0}\t".format('subjects'))
@@ -1485,7 +1486,8 @@ class Grattefile(Process):
 
                     if calcul == 'mean':
                         for roi in self.roi_list:
-                            roi_file = os.path.join(analysis_dir, "{0}_mean{1}.txt".format(roi[0] + roi[1], map_name))
+                            roi_file = os.path.join(analysis_dir,
+                                                    "{0}_mean{1}_{2}.txt".format(roi[0] + roi[1], map_name, self.data))
                             with open(roi_file, 'r') as f_read:
                                 final_res = float(f_read.read())
                             f.write("{0}\t".format(final_res))
@@ -1495,14 +1497,16 @@ class Grattefile(Process):
                         for roi in self.roi_list:
                             if roi[0] in roi_checked:
                                 continue
-                            roi_file = os.path.join(analysis_dir, "{0}_mean{1}.txt".format(roi[0] + roi[1], map_name))
+                            roi_file = os.path.join(analysis_dir,
+                                                    "{0}_mean{1}_{2}.txt".format(roi[0] + roi[1], map_name, self.data))
                             with open(roi_file, 'r') as f_read:
                                 roi_value = float(f_read.read())
 
                             # Searching the roi that has the same first element
                             roi_2 = [s for s in self.roi_list if roi[0] in s[0] and roi[1] != s[1]][0]
                             roi_file_2 = os.path.join(analysis_dir,
-                                                      "{0}_mean{1}.txt".format(roi_2[0] + roi_2[1], map_name))
+                                                      "{0}_mean{1}_{2}.txt".format(roi_2[0] + roi_2[1],
+                                                                                   map_name, self.data))
                             with open(roi_file_2, 'r') as f_read:
                                 roi_value_2 = float(f_read.read())
 
@@ -1520,7 +1524,8 @@ class Grattefile(Process):
 
                     elif calcul == "std":
                         for roi in self.roi_list:
-                            roi_file = os.path.join(analysis_dir, "{0}_std{1}.txt".format(roi[0] + roi[1], map_name))
+                            roi_file = os.path.join(analysis_dir,
+                                                    "{0}_std{1}_{2}.txt".format(roi[0] + roi[1], map_name, self.data))
                             with open(roi_file, 'r') as f_read:
                                 final_res = float(f_read.read())
                             f.write("{0}\t".format(final_res))
@@ -1530,14 +1535,16 @@ class Grattefile(Process):
                         for roi in self.roi_list:
                             if roi[0] in roi_checked:
                                 continue
-                            roi_file = os.path.join(analysis_dir, "{0}_std{1}.txt".format(roi[0] + roi[1], map_name))
+                            roi_file = os.path.join(analysis_dir,
+                                                    "{0}_std{1}_{2}.txt".format(roi[0] + roi[1], map_name, self.data))
                             with open(roi_file, 'r') as f_read:
                                 roi_value = float(f_read.read())
 
                             # Searching the roi that has the same first element
                             roi_2 = [s for s in self.roi_list if roi[0] in s[0] and roi[1] != s[1]][0]
                             roi_file_2 = os.path.join(analysis_dir,
-                                                      "{0}_std{1}.txt".format(roi_2[0] + roi_2[1], map_name))
+                                                      "{0}_std{1}_{2}.txt".format(roi_2[0] + roi_2[1],
+                                                                                  map_name, self.data))
                             with open(roi_file_2, 'r') as f_read:
                                 roi_value_2 = float(f_read.read())
 
