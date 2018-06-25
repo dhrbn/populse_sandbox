@@ -18,7 +18,6 @@ import nibabel as nib
 import numpy as np
 import subprocess
 
-
 # To change to 'run_spm12.sh_location MCR_folder script"
 from SoftwareProperties.Config import Config
 
