@@ -20,8 +20,6 @@ import numpy as np
 # To change to 'run_spm12.sh_location MCR_folder script"
 from SoftwareProperties.Config import Config
 
-print(os.getcwd())
-
 config = Config()
 spm_path = config.get_spm_path()
 matlab_path = config.get_matlab_path()
