@@ -1,4 +1,6 @@
 # Capsul import
+import datetime
+import sys
 from capsul.api import Process
 from capsul.api import StudyConfig, get_process_instance
 
@@ -18,6 +20,8 @@ import nibabel as nib
 import numpy as np
 
 # To change to 'run_spm12.sh_location MCR_folder script"
+from Project.Project import COLLECTION_BRICK, BRICK_NAME, BRICK_OUTPUTS, COLLECTION_CURRENT, TAG_BRICKS, \
+    BRICK_EXEC_TIME, BRICK_EXEC, COLLECTION_INITIAL
 from SoftwareProperties.Config import Config
 
 config = Config()
@@ -289,7 +293,7 @@ class Populse_Filter(Process):
 
 class SPM_Smooth(Process):
 
-    def __init__(self):
+    def __init__(self, project):
         super(SPM_Smooth, self).__init__()
 
         # Inputs
@@ -302,6 +306,8 @@ class SPM_Smooth(Process):
 
         # Output
         self.add_trait("smoothed_files", OutputMultiPath(File(), output=True))
+
+        self.project = project
 
     def list_outputs(self):
         process = spm.Smooth()
@@ -344,6 +350,8 @@ class SPM_Smooth(Process):
 
     def _run_process(self):
 
+        manage_brick_before_run(self, self.project)
+
         spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
 
         process = spm.Smooth()
@@ -358,6 +366,131 @@ class SPM_Smooth(Process):
 
         process.run()
 
+        manage_brick_after_run(self, self.project)
+
+def manage_brick_before_run(process, project):
+    """
+    Updates process history, before running the process
+    :param process:  process in run
+    :param project: project associated to the pipeline
+    """
+
+    outputs = process.get_outputs()
+    for output_name in outputs:
+        output_value = outputs[output_name]
+        if type(output_value) in [list, TraitListObject]:
+            for single_value in output_value:
+                manage_brick_output_before_run(project, single_value)
+        else:
+            manage_brick_output_before_run(project, output_value)
+
+    project.saveModifications()
+
+def manage_brick_after_run(process, project):
+    outputs = process.get_outputs()
+    for output_name in outputs:
+        output_value = outputs[output_name]
+        if type(output_value) in [list, TraitListObject]:
+            for single_value in output_value:
+                manage_brick_output_after_run(project, single_value)
+        else:
+            manage_brick_output_after_run(project, output_value)
+
+    project.saveModifications()
+
+def get_scan_bricks(project, output_value):
+    """
+    Gives the list of bricks, given an output value
+    :param project: project
+    :param output_value: output value
+    :return: list of bricks related to the output
+    """
+    for scan in project.session.get_documents_names(COLLECTION_CURRENT):
+        if scan in str(output_value):
+            return project.session.get_value(COLLECTION_CURRENT, scan, TAG_BRICKS)
+    return []
+
+def get_brick_to_update(project, bricks):
+    """
+    Gives the brick to update, given the scan list of bricks
+    :param project: project
+    :param bricks: list of scan bricks
+    :return: Brick to update
+    """
+
+    if len(bricks) == 0:
+        return None
+    if len(bricks) == 1:
+        return bricks[0]
+    else:
+        for brick in bricks:
+            exec_status = project.session.get_value(COLLECTION_BRICK, brick, BRICK_EXEC)
+            exec_time = project.session.get_value(COLLECTION_BRICK, brick, BRICK_EXEC_TIME)
+            if exec_time is None and exec_status is None:
+                # The last brick not run is kept
+                brick_to_keep = brick
+            elif exec_status == "Not Done":
+                # The last brick is the one being run
+                brick_to_keep = brick
+            elif exec_status == "Done":
+                # The last brick is the one being run, already changed
+                brick_to_keep = brick
+        for brick in bricks:
+            exec_status = project.session.get_value(COLLECTION_BRICK, brick, BRICK_EXEC)
+            exec_time = project.session.get_value(COLLECTION_BRICK, brick, BRICK_EXEC_TIME)
+            if exec_time is None and exec_status is None and brick != brick_to_keep:
+                # The other bricks not run are removed
+                outputs = project.session.get_value(COLLECTION_BRICK, brick, BRICK_OUTPUTS)
+                for output_name in outputs:
+                    output_value = outputs[output_name]
+                    remove_brick_output(brick, output_value, project)
+                project.session.remove_document(COLLECTION_BRICK, brick)
+        return brick_to_keep
+
+def remove_brick_output(brick, output, project):
+    """
+    Removes the bricks from the outputs
+    :param brick: brick
+    :param output: output
+    """
+
+    if type(output) in [list, TraitListObject]:
+        for single_value in output:
+            remove_brick_output(brick, single_value, project)
+        return
+
+    for scan in project.session.get_documents_names(COLLECTION_CURRENT):
+        if scan in output:
+            output_bricks = project.session.get_value(COLLECTION_CURRENT, scan, TAG_BRICKS)
+            output_bricks.remove(brick)
+            project.session.set_value(COLLECTION_CURRENT, scan, TAG_BRICKS, output_bricks)
+            project.session.set_value(COLLECTION_INITIAL, scan, TAG_BRICKS, output_bricks)
+
+def manage_brick_output_before_run(project, output_value):
+    """
+    Manages the bricks history before the run
+    :param project: project
+    :param output_value: output value
+    """
+
+    scan_bricks_history = get_scan_bricks(project, output_value)
+    brick_to_update = get_brick_to_update(project, scan_bricks_history)
+    if brick_to_update is not None:
+        project.session.set_value(COLLECTION_BRICK, brick_to_update, BRICK_EXEC_TIME,
+                                  datetime.datetime.now())
+        project.session.set_value(COLLECTION_BRICK, brick_to_update, BRICK_EXEC, "Not Done")
+
+def manage_brick_output_after_run(project, output_value):
+    """
+    Manages the bricks history before the run
+    :param project: project
+    :param output_value: output value
+    """
+
+    scan_bricks_history = get_scan_bricks(project, output_value)
+    brick_to_update = get_brick_to_update(project, scan_bricks_history)
+    if brick_to_update is not None:
+        project.session.set_value(COLLECTION_BRICK, brick_to_update, BRICK_EXEC, "Done")
 
 class SPM_NewSegment(Process):
 
