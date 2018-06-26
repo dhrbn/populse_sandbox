@@ -4,4 +4,4 @@ from .processes import (Addition, Substraction, SPM_Smooth, FSL_Smooth, FSL_Smoo
                         ROI_List_Generator, Conv_ROI, Conv_ROI2, Write_results, Grattefile, BOLD_disp,
                         Timecourse_fullTask, ANAT_disp)
 
-from .SMOOTH_TEST_0526 import Pipeline
+from .pipeline_nodes import Pipeline3
