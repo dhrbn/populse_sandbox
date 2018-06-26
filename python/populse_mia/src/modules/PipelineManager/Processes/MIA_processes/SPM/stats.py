@@ -1,6 +1,3 @@
-# Capsul import
-from capsul.api import Process
-
 # Trait import
 from traits.api import Undefined
 from nipype.interfaces.base import OutputMultiPath, InputMultiPath, File, traits
@@ -11,16 +8,17 @@ import os
 from nipype.interfaces import spm
 
 # MIA import
+from PipelineManager.Process_mia import Process_mia
 from SoftwareProperties.Config import Config
 
 config = Config()
 matlab_cmd = config.get_matlab_command()
 
 
-class Level1Design(Process):
+class Level1Design(Process_mia):
 
-    def __init__(self):
-        super(Level1Design, self).__init__()
+    def __init__(self, project):
+        super(Level1Design, self).__init__(project)
 
         # Inputs
         self.add_trait("timing_units", traits.Enum('scans', 'secs', use_default=True,
@@ -101,10 +99,10 @@ class Level1Design(Process):
         return d
 
 
-class EstimateModel(Process):
+class EstimateModel(Process_mia):
 
-    def __init__(self):
-        super(EstimateModel, self).__init__()
+    def __init__(self, project):
+        super(EstimateModel, self).__init__(project)
 
         # Inputs
         self.add_trait("spm_mat_file", File(output=False, copyfile=True))
@@ -167,10 +165,10 @@ class EstimateModel(Process):
         process.run()
 
 
-class EstimateContrast(Process):
+class EstimateContrast(Process_mia):
 
-    def __init__(self):
-        super(EstimateContrast, self).__init__()
+    def __init__(self, project):
+        super(EstimateContrast, self).__init__(project)
 
         # Inputs
         self.add_trait("spm_mat_file", File(output=False, copyfile=True))

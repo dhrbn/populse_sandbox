@@ -1,5 +1,4 @@
 # Capsul import
-from capsul.api import Process
 from capsul.api import StudyConfig, get_process_instance
 
 # Trait import
@@ -10,11 +9,13 @@ from nipype.interfaces.base import File
 import os
 from nipype.interfaces import fsl
 
+from PipelineManager.Process_mia import Process_mia
 
-class Smooth(Process):
 
-    def __init__(self):
-        super(Smooth, self).__init__()
+class Smooth(Process_mia):
+
+    def __init__(self, project):
+        super(Smooth, self).__init__(project)
 
         self.add_trait("in_file", File(output=False))
         self.add_trait("fwhm", Float(output=False))

@@ -1,6 +1,3 @@
-# Capsul import
-from capsul.api import Process
-
 # Trait import
 from traits.api import Float
 from nipype.interfaces.base import OutputMultiPath, InputMultiPath, File, traits
@@ -11,16 +8,17 @@ import os
 from nipype.interfaces import spm
 
 # MIA import
+from PipelineManager.Process_mia import Process_mia
 from SoftwareProperties.Config import Config
 
 config = Config()
 matlab_cmd = config.get_matlab_command()
 
 
-class Smooth(Process):
+class Smooth(Process_mia):
 
-    def __init__(self, database=None):
-        super(Smooth, self).__init__()
+    def __init__(self, project):
+        super(Smooth, self).__init__(project)
 
         # Inputs
         self.add_trait("in_files", InputMultiPath(ImageFileSPM(), copyfile=False, output=False))
@@ -88,10 +86,10 @@ class Smooth(Process):
         process.run()
 
 
-class NewSegment(Process):
+class NewSegment(Process_mia):
 
-    def __init__(self):
-        super(NewSegment, self).__init__()
+    def __init__(self, project):
+        super(NewSegment, self).__init__(project)
 
         # Inputs
         self.add_trait("affine_regularization", traits.Enum('mni', 'eastern', 'subj', 'none',
@@ -183,10 +181,10 @@ class NewSegment(Process):
         process.run()
 
 
-class Normalize(Process):
+class Normalize(Process_mia):
 
-    def __init__(self):
-        super(Normalize, self).__init__()
+    def __init__(self, project):
+        super(Normalize, self).__init__(project)
 
         # Inputs
         # self.add_trait("apply_to_files", InputMultiPath(traits.Either(
@@ -244,10 +242,10 @@ class Normalize(Process):
         process.run()
 
 
-class Realign(Process):
+class Realign(Process_mia):
 
-    def __init__(self):
-        super(Realign, self).__init__()
+    def __init__(self, project):
+        super(Realign, self).__init__(project)
 
         # Inputs
         #self.add_trait("in_files", InputMultiPath(traits.Either(
@@ -331,10 +329,10 @@ class Realign(Process):
         process.run()
 
 
-class Coregister(Process):
+class Coregister(Process_mia):
 
-    def __init__(self):
-        super(Coregister, self).__init__()
+    def __init__(self, project):
+        super(Coregister, self).__init__(project)
 
         # Inputs
         self.add_trait("target", ImageFileSPM(output=False, copyfile=False))
