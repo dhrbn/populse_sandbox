@@ -1,6 +1,3 @@
-# Capsul import
-from capsul.api import Process
-
 # Trait import
 from nipype.interfaces.base import OutputMultiPath, InputMultiPath, File, traits, TraitListObject, Undefined
 from nipype.interfaces.spm.base import ImageFileSPM
@@ -12,16 +9,17 @@ from skimage.transform import resize
 import nibabel as nib
 
 # MIA import
+from PipelineManager.Process_mia import Process_mia
 from SoftwareProperties.Config import Config
 
 config = Config()
 matlab_cmd = config.get_matlab_command()
 
 
-class Normalize_Spatial_Mask(Process):
+class Normalize_Spatial_Mask(Process_mia):
 
-    def __init__(self):
-        super(Normalize_Spatial_Mask, self).__init__()
+    def __init__(self, project):
+        super(Normalize_Spatial_Mask, self).__init__(project)
 
         # Inputs
         """self.add_trait("apply_to_files", InputMultiPath(traits.Either(
@@ -96,10 +94,10 @@ class Normalize_Spatial_Mask(Process):
         process.run()
 
 
-class Threshold(Process):
+class Threshold(Process_mia):
 
-    def __init__(self):
-        super(Threshold, self).__init__()
+    def __init__(self, project):
+        super(Threshold, self).__init__(project)
 
         # Inputs
         self.add_trait("in_files", InputMultiPath(traits.Either(
@@ -162,10 +160,10 @@ class Threshold(Process):
         nib.save(img_final, out_file)
 
 
-class Resize(Process):
+class Resize(Process_mia):
 
-    def __init__(self):
-        super(Resize, self).__init__()
+    def __init__(self, project):
+        super(Resize, self).__init__(project)
 
         # Inputs
         self.add_trait("reference_image", InputMultiPath(traits.Either(
@@ -259,10 +257,10 @@ class Resize(Process):
         nib.save(mask_final, out_file)
 
 
-class Conv_ROI(Process):
+class Conv_ROI(Process_mia):
 
-    def __init__(self):
-        super(Conv_ROI, self).__init__()
+    def __init__(self, project):
+        super(Conv_ROI, self).__init__(project)
 
         # Inputs
         self.add_trait("roi_list", traits.List(output=False))
@@ -319,10 +317,10 @@ class Conv_ROI(Process):
             print('{0} saved'.format(os.path.basename(out_file)))
 
 
-class Conv_ROI2(Process):
+class Conv_ROI2(Process_mia):
 
-    def __init__(self):
-        super(Conv_ROI2, self).__init__()
+    def __init__(self, project):
+        super(Conv_ROI2, self).__init__(project)
 
         # Inputs
         self.add_trait("roi_list", traits.List(output=False))

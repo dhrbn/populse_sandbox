@@ -1,6 +1,3 @@
-# Capsul import
-from capsul.api import Process
-
 # Trait import
 from nipype.interfaces.base import traits
 
@@ -11,11 +8,13 @@ import nibabel as nib
 import numpy as np
 import subprocess
 
+from PipelineManager.Process_mia import Process_mia
 
-class Write_results(Process):
 
-    def __init__(self):
-        super(Write_results, self).__init__()
+class Write_results(Process_mia):
+
+    def __init__(self, project):
+        super(Write_results, self).__init__(project)
 
         # Inputs
         self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
@@ -122,10 +121,10 @@ class Write_results(Process):
             print('{0} ROI files saved'.format(map_name))
 
 
-class Grattefile(Process):
+class Grattefile(Process_mia):
 
-    def __init__(self):
-        super(Grattefile, self).__init__()
+    def __init__(self, project):
+        super(Grattefile, self).__init__(project)
 
         # Inputs
         self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
@@ -307,7 +306,7 @@ class Grattefile(Process):
                             roi_checked.append(roi[0])
 
 
-class BOLD_disp(Process):
+class BOLD_disp(Process_mia):
     """
     BOLD_disp(Patient, plane, tranche, tresh, native, tranche_native)
     Patient: Patient cell array.
@@ -321,8 +320,8 @@ class BOLD_disp(Process):
     BOLD_disp(Pat,'coronal',-80:5:30, 'N', 'N')
     BOLD_disp(Pat,'sagittal',-60:2:-32, Pat{1}.Thresholding, 'N')
     """
-    def __init__(self):
-        super(BOLD_disp, self).__init__()
+    def __init__(self, project):
+        super(BOLD_disp, self).__init__(project)
 
         # Inputs have to be .mat files
         self.add_trait("matlab_function", traits.File(output=False))
@@ -393,10 +392,10 @@ class BOLD_disp(Process):
         test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
 
 
-class ANAT_disp(Process):
+class ANAT_disp(Process_mia):
 
-    def __init__(self):
-        super(ANAT_disp, self).__init__()
+    def __init__(self, project):
+        super(ANAT_disp, self).__init__(project)
 
         # Inputs have to be .mat files
         self.add_trait("matlab_function", traits.File(output=False))
@@ -460,10 +459,10 @@ class ANAT_disp(Process):
         test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
 
 
-class Timecourse_fullTask(Process):
+class Timecourse_fullTask(Process_mia):
 
-    def __init__(self):
-        super(Timecourse_fullTask, self).__init__()
+    def __init__(self, project):
+        super(Timecourse_fullTask, self).__init__(project)
 
         # Inputs have to be .mat files
         self.add_trait("matlab_function", traits.File(output=False))
