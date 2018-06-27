@@ -12,8 +12,6 @@ from PipelineManager.Process_mia import Process_mia
 from SoftwareProperties.Config import Config
 
 config = Config()
-matlab_cmd = config.get_matlab_command()
-
 
 class Smooth(Process_mia):
 
@@ -71,7 +69,7 @@ class Smooth(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Smooth()
         for idx, element in enumerate(self.in_files):
@@ -167,7 +165,7 @@ class NewSegment(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.NewSegment()
         process.inputs.affine_regularization = self.affine_regularization
@@ -229,7 +227,7 @@ class Normalize(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Normalize12()
         process.inputs.apply_to_files = self.apply_to_files
@@ -308,7 +306,7 @@ class Realign(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Realign()
         process.inputs.in_files = self.in_files
@@ -380,7 +378,7 @@ class Coregister(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Coregister()
         process.inputs.target = self.target
