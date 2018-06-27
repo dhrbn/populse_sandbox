@@ -13,8 +13,8 @@ from PipelineManager.Process_mia import Process_mia
 
 class Write_results(Process_mia):
 
-    def __init__(self, project):
-        super(Write_results, self).__init__(project)
+    def __init__(self):
+        super(Write_results, self).__init__()
 
         # Inputs
         self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
@@ -123,8 +123,8 @@ class Write_results(Process_mia):
 
 class Grattefile(Process_mia):
 
-    def __init__(self, project):
-        super(Grattefile, self).__init__(project)
+    def __init__(self):
+        super(Grattefile, self).__init__()
 
         # Inputs
         self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
@@ -320,8 +320,8 @@ class BOLD_disp(Process_mia):
     BOLD_disp(Pat,'coronal',-80:5:30, 'N', 'N')
     BOLD_disp(Pat,'sagittal',-60:2:-32, Pat{1}.Thresholding, 'N')
     """
-    def __init__(self, project):
-        super(BOLD_disp, self).__init__(project)
+    def __init__(self):
+        super(BOLD_disp, self).__init__()
 
         # Inputs have to be .mat files
         self.add_trait("matlab_function", traits.File(output=False))
@@ -394,8 +394,8 @@ class BOLD_disp(Process_mia):
 
 class ANAT_disp(Process_mia):
 
-    def __init__(self, project):
-        super(ANAT_disp, self).__init__(project)
+    def __init__(self):
+        super(ANAT_disp, self).__init__()
 
         # Inputs have to be .mat files
         self.add_trait("matlab_function", traits.File(output=False))
@@ -461,8 +461,8 @@ class ANAT_disp(Process_mia):
 
 class Timecourse_fullTask(Process_mia):
 
-    def __init__(self, project):
-        super(Timecourse_fullTask, self).__init__(project)
+    def __init__(self):
+        super(Timecourse_fullTask, self).__init__()
 
         # Inputs have to be .mat files
         self.add_trait("matlab_function", traits.File(output=False))

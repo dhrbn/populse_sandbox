@@ -14,8 +14,8 @@ from PipelineManager.Process_mia import Process_mia
 
 class Smooth(Process_mia):
 
-    def __init__(self, project):
-        super(Smooth, self).__init__(project)
+    def __init__(self):
+        super(Smooth, self).__init__()
 
         self.add_trait("in_file", File(output=False))
         self.add_trait("fwhm", Float(output=False))

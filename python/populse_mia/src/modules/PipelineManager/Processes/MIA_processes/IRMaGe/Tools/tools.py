@@ -5,13 +5,14 @@ from capsul.api import Process
 from nipype.interfaces.base import traits
 
 # MIA import
+from PipelineManager.Process_mia import Process_mia
 from Project.Filter import Filter
 
 # Other import
 import os
 
 
-class ROI_List_Generator(Process):
+class ROI_List_Generator(Process_mia):
 
     def __init__(self):
         super(ROI_List_Generator, self).__init__()
@@ -42,13 +43,12 @@ class ROI_List_Generator(Process):
         self.roi_list = out_list
 
 
-class Populse_Filter(Process):
+"""
+class Populse_Filter(Process_mia):
 
-    def __init__(self, project, scans_list):
+    def __init__(self, scans_list):
         super(Populse_Filter, self).__init__()
 
-        self.project = project
-        self.database = self.project.database
         if scans_list:
             self.scans_list = scans_list
         else:
@@ -92,5 +92,6 @@ class Populse_Filter(Process):
             output[idx] = full_path
 
         self.output = output
+"""
 
 
