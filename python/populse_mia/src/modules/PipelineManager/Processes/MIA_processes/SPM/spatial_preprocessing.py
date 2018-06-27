@@ -17,8 +17,8 @@ matlab_cmd = config.get_matlab_command()
 
 class Smooth(Process_mia):
 
-    def __init__(self, project):
-        super(Smooth, self).__init__(project)
+    def __init__(self):
+        super(Smooth, self).__init__()
 
         # Inputs
         self.add_trait("in_files", InputMultiPath(ImageFileSPM(), copyfile=False, output=False))
@@ -88,8 +88,8 @@ class Smooth(Process_mia):
 
 class NewSegment(Process_mia):
 
-    def __init__(self, project):
-        super(NewSegment, self).__init__(project)
+    def __init__(self):
+        super(NewSegment, self).__init__()
 
         # Inputs
         self.add_trait("affine_regularization", traits.Enum('mni', 'eastern', 'subj', 'none',
@@ -183,8 +183,8 @@ class NewSegment(Process_mia):
 
 class Normalize(Process_mia):
 
-    def __init__(self, project):
-        super(Normalize, self).__init__(project)
+    def __init__(self):
+        super(Normalize, self).__init__()
 
         # Inputs
         # self.add_trait("apply_to_files", InputMultiPath(traits.Either(
@@ -244,8 +244,8 @@ class Normalize(Process_mia):
 
 class Realign(Process_mia):
 
-    def __init__(self, project):
-        super(Realign, self).__init__(project)
+    def __init__(self):
+        super(Realign, self).__init__()
 
         # Inputs
         #self.add_trait("in_files", InputMultiPath(traits.Either(
@@ -331,8 +331,8 @@ class Realign(Process_mia):
 
 class Coregister(Process_mia):
 
-    def __init__(self, project):
-        super(Coregister, self).__init__(project)
+    def __init__(self):
+        super(Coregister, self).__init__()
 
         # Inputs
         self.add_trait("target", ImageFileSPM(output=False, copyfile=False))

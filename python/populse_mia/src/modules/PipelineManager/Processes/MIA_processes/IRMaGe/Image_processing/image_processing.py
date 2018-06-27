@@ -18,8 +18,8 @@ matlab_cmd = config.get_matlab_command()
 
 class Normalize_Spatial_Mask(Process_mia):
 
-    def __init__(self, project):
-        super(Normalize_Spatial_Mask, self).__init__(project)
+    def __init__(self):
+        super(Normalize_Spatial_Mask, self).__init__()
 
         # Inputs
         """self.add_trait("apply_to_files", InputMultiPath(traits.Either(
@@ -96,8 +96,8 @@ class Normalize_Spatial_Mask(Process_mia):
 
 class Threshold(Process_mia):
 
-    def __init__(self, project):
-        super(Threshold, self).__init__(project)
+    def __init__(self):
+        super(Threshold, self).__init__()
 
         # Inputs
         self.add_trait("in_files", InputMultiPath(traits.Either(
@@ -162,8 +162,8 @@ class Threshold(Process_mia):
 
 class Resize(Process_mia):
 
-    def __init__(self, project):
-        super(Resize, self).__init__(project)
+    def __init__(self):
+        super(Resize, self).__init__()
 
         # Inputs
         self.add_trait("reference_image", InputMultiPath(traits.Either(
@@ -259,8 +259,8 @@ class Resize(Process_mia):
 
 class Conv_ROI(Process_mia):
 
-    def __init__(self, project):
-        super(Conv_ROI, self).__init__(project)
+    def __init__(self):
+        super(Conv_ROI, self).__init__()
 
         # Inputs
         self.add_trait("roi_list", traits.List(output=False))
@@ -319,8 +319,8 @@ class Conv_ROI(Process_mia):
 
 class Conv_ROI2(Process_mia):
 
-    def __init__(self, project):
-        super(Conv_ROI2, self).__init__(project)
+    def __init__(self):
+        super(Conv_ROI2, self).__init__()
 
         # Inputs
         self.add_trait("roi_list", traits.List(output=False))

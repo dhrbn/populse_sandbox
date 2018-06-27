@@ -17,8 +17,8 @@ matlab_cmd = config.get_matlab_command()
 
 class Level1Design(Process_mia):
 
-    def __init__(self, project):
-        super(Level1Design, self).__init__(project)
+    def __init__(self):
+        super(Level1Design, self).__init__()
 
         # Inputs
         self.add_trait("timing_units", traits.Enum('scans', 'secs', use_default=True,
@@ -101,8 +101,8 @@ class Level1Design(Process_mia):
 
 class EstimateModel(Process_mia):
 
-    def __init__(self, project):
-        super(EstimateModel, self).__init__(project)
+    def __init__(self):
+        super(EstimateModel, self).__init__()
 
         # Inputs
         self.add_trait("spm_mat_file", File(output=False, copyfile=True))
@@ -167,8 +167,8 @@ class EstimateModel(Process_mia):
 
 class EstimateContrast(Process_mia):
 
-    def __init__(self, project):
-        super(EstimateContrast, self).__init__(project)
+    def __init__(self):
+        super(EstimateContrast, self).__init__()
 
         # Inputs
         self.add_trait("spm_mat_file", File(output=False, copyfile=True))
