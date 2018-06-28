@@ -126,6 +126,9 @@ class Grattefile(Process_mia):
     def __init__(self):
         super(Grattefile, self).__init__()
 
+        patient_info_dict = {"name": "alej170316_testMIA24052018", "patho": "ACMD", "age": 64, "sex": "M",
+                             "mr": "3T", "gas": "BACTAL", "admin": "MASK"}
+
         # Inputs
         self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
         self.add_trait("data", traits.String("BOLD", output=False, optional=True))
@@ -133,7 +136,7 @@ class Grattefile(Process_mia):
         self.add_trait("mean_in_files", traits.List(traits.File(), output=False))
         self.add_trait("std_in_files", traits.List(traits.File(), output=False))
         self.add_trait("roi_list", traits.List(output=False))
-        self.add_trait("patient_info", traits.Dict(output=False))
+        self.add_trait("patient_info", traits.Dict(patient_info_dict, output=False, optional=True))
 
         # Outputs
         self.add_trait("out_files", traits.List(traits.File(), output=True))

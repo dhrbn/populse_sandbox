@@ -5,29 +5,30 @@ from nipype.interfaces.base import traits
 from PipelineManager.Process_mia import Process_mia
 
 
-class Find_Beta_0001(Process_mia):
+class Find_In_List(Process_mia):
     """
-    From a list of file name, returning the file name that contains "beta_0001".
+    From a list, returning the element that contains the pattern.
     """
 
     def __init__(self):
-        super(Find_Beta_0001, self).__init__()
+        super(Find_In_List, self).__init__()
 
         # Inputs
-        self.add_trait("beta_images", traits.List(output=False))
+        self.add_trait("in_list", traits.List(output=False))
+        self.add_trait("pattern", traits.String("0001", output=False, optional=True))
 
         # Outputs
-        self.add_trait("beta_0001_file", traits.File(output=True))
+        self.add_trait("out_file", traits.File(output=True))
 
     def list_outputs(self):
         for file in self.beta_images:
-            if 'beta_0001' in file:
-                return {'beta_0001_file': file}, {}
+            if self.pattern in file:
+                return {'out_file': file}, {}
 
     def _run_process(self):
         out_file = None
         for file in self.beta_images:
-            if 'beta_0001' in file:
+            if self.pattern in file:
                 out_file = file
                 break
 
@@ -55,7 +56,7 @@ class Files_To_List(Process_mia):
 
     def _run_process(self):
         out_list = [self.file1, self.file2]
-        self.out_list = out_list
+        self.file_list = out_list
 
 
 class List_Duplicate(Process_mia):
@@ -90,8 +91,8 @@ class ROI_List_Generator(Process_mia):
                     'ROI_STR', 'ACP', 'ACA', 'ACM', 'PICA', 'SCA']
 
         # Inputs
-        self.add_trait("pos", traits.List(list_pos, output=False))
-        self.add_trait("hemi", traits.List(['_L', '_R'], output=False))
+        self.add_trait("pos", traits.List(list_pos, output=False, optional=True))
+        self.add_trait("hemi", traits.List(['_L', '_R'], output=False, optional=True))
 
         # Output
         self.add_trait("roi_list", traits.List(output=True))
