@@ -12,8 +12,6 @@ from PipelineManager.Process_mia import Process_mia
 from SoftwareProperties.Config import Config
 
 config = Config()
-matlab_cmd = config.get_matlab_command()
-
 
 class Level1Design(Process_mia):
 
@@ -50,7 +48,7 @@ class Level1Design(Process_mia):
         if os.path.isfile(out_file):
             os.remove(out_file)
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Level1Design()
         process.inputs.timing_units = self.timing_units
@@ -145,7 +143,7 @@ class EstimateModel(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.EstimateModel()
         process.inputs.spm_mat_file = self.spm_mat_file
@@ -208,7 +206,7 @@ class EstimateContrast(Process_mia):
         return outputs
 
     def _run_process(self):
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
         process = spm.EstimateContrast()
         process.inputs.spm_mat_file = self.spm_mat_file
         process.inputs.contrasts = self.contrasts

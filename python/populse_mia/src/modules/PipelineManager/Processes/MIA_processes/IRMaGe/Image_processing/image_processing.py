@@ -13,8 +13,6 @@ from PipelineManager.Process_mia import Process_mia
 from SoftwareProperties.Config import Config
 
 config = Config()
-matlab_cmd = config.get_matlab_command()
-
 
 class Normalize_Spatial_Mask(Process_mia):
 
@@ -81,7 +79,7 @@ class Normalize_Spatial_Mask(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Normalize12()
         process.inputs.apply_to_files = self._check_file_names()

@@ -1,15 +1,8 @@
-# Capsul import
-from capsul.api import Process
-
 # Trait import
 from nipype.interfaces.base import traits
 
 # MIA import
 from PipelineManager.Process_mia import Process_mia
-from Project.Filter import Filter
-
-# Other import
-import os
 
 
 class ROI_List_Generator(Process_mia):
