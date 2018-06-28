@@ -13,6 +13,7 @@ from SoftwareProperties.Config import Config
 
 config = Config()
 
+
 class Smooth(Process_mia):
 
     def __init__(self):

@@ -5,6 +5,29 @@ from nipype.interfaces.base import traits
 from PipelineManager.Process_mia import Process_mia
 
 
+class List_Duplicate(Process_mia):
+    """
+    From a file name, generating a list containing this file name and the file name itself.
+    """
+
+    def __init__(self):
+        super(List_Duplicate, self).__init__()
+
+        # Inputs
+        self.add_trait("file_name", traits.File(output=False))
+
+        # Outputs
+        self.add_trait("out_file", traits.File(output=True))
+        self.add_trait("out_list", traits.List(output=True))
+
+    def list_outputs(self):
+        return {"out_list": [self.file_name], "out_file": self.file_name}, {}
+
+    def _run_process(self):
+        self.out_list = [self.file_name]
+        self.out_file = self.file_name
+
+
 class ROI_List_Generator(Process_mia):
 
     def __init__(self):
