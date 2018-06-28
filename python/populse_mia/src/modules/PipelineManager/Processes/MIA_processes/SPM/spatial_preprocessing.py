@@ -90,6 +90,13 @@ class NewSegment(Process_mia):
     def __init__(self):
         super(NewSegment, self).__init__()
 
+        tissues_list = [(('/home/david/spm12/spm12_mcr/spm/spm12/tpm/TPM.nii', 1), 2, (True, False), (False, False)),
+                        (('/home/david/spm12/spm12_mcr/spm/spm12/tpm/TPM.nii', 2), 2, (True, False), (False, False)),
+                        (('/home/david/spm12/spm12_mcr/spm/spm12/tpm/TPM.nii', 3), 2, (True, False), (False, False)),
+                        (('/home/david/spm12/spm12_mcr/spm/spm12/tpm/TPM.nii', 4), 3, (True, False), (False, False)),
+                        (('/home/david/spm12/spm12_mcr/spm/spm12/tpm/TPM.nii', 5), 4, (True, False), (False, False)),
+                        (('/home/david/spm12/spm12_mcr/spm/spm12/tpm/TPM.nii', 6), 2, (True, False), (False, False))]
+
         # Inputs
         self.add_trait("affine_regularization", traits.Enum('mni', 'eastern', 'subj', 'none',
                                                             output=False, optional=True))
@@ -99,10 +106,13 @@ class NewSegment(Process_mia):
                                                     output=False, optional=True))"""
         self.add_trait("channel_info", traits.Tuple((0.0001, 60, (False, True)), output=False, optional=True))
         self.add_trait("sampling_distance", Float(3.0, output=False, optional=True))
-        self.add_trait("tissues", traits.List(traits.Tuple(
+        """self.add_trait("tissues", traits.List(traits.Tuple(
             traits.Tuple(ImageFileSPM(exists=True), traits.Int()),
             traits.Int(), traits.Tuple(traits.Bool, traits.Bool),
-            traits.Tuple(traits.Bool, traits.Bool)), output=False, optional=True))
+            traits.Tuple(traits.Bool, traits.Bool)), output=False, optional=True))"""
+
+        self.add_trait("tissues", traits.List(tissues_list, output=False, optional=True))
+
         """self.add_trait("warping_regularization", traits.Either(
             traits.List(traits.Float(), minlen=5, maxlen=5),
             traits.Float(), output=False))"""
@@ -110,7 +120,7 @@ class NewSegment(Process_mia):
         """self.add_trait("warping_regularization",
             traits.List(traits.Float(), output=False, optional=True))"""
         self.add_trait("warping_regularization",
-            traits.List([0, 0.001, 0.5, 0.05, 0.2], output=False, optional=True))
+                       traits.List([0, 0.001, 0.5, 0.05, 0.2], output=False, optional=True))
         """self.add_trait("write_deformation_fields", traits.List(
             traits.Bool(), output=False, optional=True))"""
         self.add_trait("write_deformation_fields", traits.List(
@@ -197,7 +207,7 @@ class Normalize(Process_mia):
         self.add_trait("jobtype", traits.String('write',
                                                 usedefault=True, output=False, optional=True))
         # self.add_trait("write_bounding_box", traits.List(traits.List(traits.Float()), output=False, optional=True))
-        self.add_trait("write_bounding_box", traits.List(traits.List([[-78, -112, -50], [78, 76, 85]]),
+        self.add_trait("write_bounding_box", traits.List([[-78, -112, -50], [78, 76, 85]],
                                                          output=False, optional=True))
         # self.add_trait("write_voxel_sizes", traits.List(traits.Float(), output=False, optional=True))
         self.add_trait("write_voxel_sizes", traits.List([1, 1, 1], output=False, optional=True))
