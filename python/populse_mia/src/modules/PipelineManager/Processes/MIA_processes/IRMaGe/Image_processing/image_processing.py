@@ -14,6 +14,7 @@ from SoftwareProperties.Config import Config
 
 config = Config()
 
+
 class Normalize_Spatial_Mask(Process_mia):
 
     def __init__(self):

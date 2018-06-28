@@ -5,6 +5,59 @@ from nipype.interfaces.base import traits
 from PipelineManager.Process_mia import Process_mia
 
 
+class Find_Beta_0001(Process_mia):
+    """
+    From a list of file name, returning the file name that contains "beta_0001".
+    """
+
+    def __init__(self):
+        super(Find_Beta_0001, self).__init__()
+
+        # Inputs
+        self.add_trait("beta_images", traits.List(output=False))
+
+        # Outputs
+        self.add_trait("beta_0001_file", traits.File(output=True))
+
+    def list_outputs(self):
+        for file in self.beta_images:
+            if 'beta_0001' in file:
+                return {'beta_0001_file': file}, {}
+
+    def _run_process(self):
+        out_file = None
+        for file in self.beta_images:
+            if 'beta_0001' in file:
+                out_file = file
+                break
+
+        self.out_file = out_file
+
+
+class Files_To_List(Process_mia):
+    """
+    From several file names, generating a list containing all theses file names.
+    """
+
+    def __init__(self):
+        super(Files_To_List, self).__init__()
+
+        # Inputs
+        self.add_trait("file1", traits.File(output=False))
+        self.add_trait("file2", traits.File(output=False))
+
+        # Outputs
+        self.add_trait("file_list", traits.List(output=True))
+
+    def list_outputs(self):
+        out_list = [self.file1, self.file2]
+        return {'file_list': out_list}, {}
+
+    def _run_process(self):
+        out_list = [self.file1, self.file2]
+        self.out_list = out_list
+
+
 class List_Duplicate(Process_mia):
     """
     From a file name, generating a list containing this file name and the file name itself.

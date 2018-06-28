@@ -13,24 +13,26 @@ from SoftwareProperties.Config import Config
 
 config = Config()
 
+
 class Level1Design(Process_mia):
 
     def __init__(self):
         super(Level1Design, self).__init__()
 
+        session_info_dict = {'cond': {}, 'hpf': 427.2, 'multi': {}, 'regress': {}}
+
         # Inputs
         self.add_trait("timing_units", traits.Enum('scans', 'secs', use_default=True,
                                                    output=False, copyfile=False, optional=True))
-        self.add_trait("interscan_interval", traits.Float(3.0, output=False, usedefault=True))
+        self.add_trait("interscan_interval", traits.Float(3.0, output=False, usedefault=True, optional=True))
 
         self.add_trait("microtime_resolution", traits.Int(16, usedefault=True, output=False, optional=True))
         self.add_trait("microtime_onset", traits.Float(1.0, usedefault=True, output=False, optional=True))
-        self.add_trait("session_info", traits.Any(output=False, optional=True)) # TODO: Find the value to add
-        self.add_trait("factor_info", traits.List(traits.Dict(traits.Enum('name', 'levels')),
-                                                   output=False, optional=True))
-        #self.add_trait("factor_info", traits.Dict(traits.Enum('name', 'levels'), output=False, optional=True))
-        self.add_trait("bases", traits.Dict(traits.Enum('hrf', 'fourier', 'fourier_han', 'gamma', 'fir'),
-                                            output=False))
+        self.add_trait("session_info", traits.Dict(session_info_dict, output=False, optional=True))
+        self.add_trait("factor_info", traits.List([{}], output=False, optional=True))
+        self.add_trait("bases", traits.Dict({'hrf': {'derivs': [0, 0]}}, output=False, optional=True))
+        self.add_trait("scans", traits.List(traits.File(), output=False))
+        self.add_trait("multi_reg", traits.List(traits.File(), output=False))
         self.add_trait("volterra_expansion_order", traits.Int(1, output=False, optional=True))
         self.add_trait("global_intensity_normalization", traits.Enum('none', 'scaling', output=False, optional=True))
         self.add_trait("mask_image", traits.File(output=False, optional=True))
@@ -63,8 +65,8 @@ class Level1Design(Process_mia):
         process.inputs.mask_threshold = self.mask_threshold
         process.inputs.model_serial_correlations = self.model_serial_correlations
 
-        #process.inputs.session_info = self.get_session_info()
-        process.inputs.session_info = self.session_info
+        process.inputs.session_info = self.get_session_info()
+        # process.inputs.session_info = self.session_info
 
         process.run()
 
@@ -77,16 +79,14 @@ class Level1Design(Process_mia):
             os.remove(out_file)
 
     def get_session_info(self):
-        from nipype.algorithms import modelgen
-        from nipype.interfaces.base import Bunch
-        s = modelgen.SpecifyModel()
+        session_info = self.session_info
+        session_info['scans'] = self.scans
+        session_info['multi_reg'] = []
+        for reg in self.multi_reg:
+            reg_to_add = [{reg}]
+            session_info['multi_reg'].append(reg_to_add)
 
-        for key, value in self.session_info.items():
-            if key == 'subject_info' and value == {}:
-                value = None
-            setattr(s.inputs, key, value)
-
-        return s
+        return session_info
 
     def list_outputs(self):
         # Copying the generated SPM.mat file in the data directory
@@ -104,8 +104,7 @@ class EstimateModel(Process_mia):
 
         # Inputs
         self.add_trait("spm_mat_file", File(output=False, copyfile=True))
-        self.add_trait("estimation_method", traits.Dict(traits.Enum('Classical', 'Bayesian2', 'Bayesian'),
-                                                        output=False))
+        self.add_trait("estimation_method", traits.Dict({'Classical': 1}, output=False, optional=True))
         self.add_trait("write_residuals", traits.Bool(output=False, optional=True))
         self.add_trait("flags", traits.Dict(output=False, optional=True))
         self.add_trait("version", traits.String("spm12", output=False, optional=True))
@@ -170,7 +169,7 @@ class EstimateContrast(Process_mia):
 
         # Inputs
         self.add_trait("spm_mat_file", File(output=False, copyfile=True))
-        self.add_trait("contrasts", traits.List(output=False))
+        self.add_trait("contrasts", traits.List([('+', 'T', ['R1_1'], [1])], output=False, optional=True))
         self.add_trait("beta_images", InputMultiPath(File(), output=False, copyfile=False))
         self.add_trait("residual_image", File(output=False, copyfile=False))
         self.add_trait("use_derivs", traits.Bool(output=False, optional=True, xor=['group_contrast']))
