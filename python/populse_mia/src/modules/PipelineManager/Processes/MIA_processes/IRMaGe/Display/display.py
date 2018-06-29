@@ -520,3 +520,142 @@ class Timecourse_fullTask(Process_mia):
         # Running the function
         test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
         # test = subprocess.run(['matlab', '-r', matlab_script])
+
+
+class CVR_Report(Process_mia):
+
+    def __init__(self):
+        super(CVR_Report, self).__init__()
+
+        # Inputs
+        self.add_trait("image", traits.List(traits.File(exists=True), output=False))
+        self.add_trait("", traits.List(output=False))
+
+        # Outputs
+        self.add_trait("report", traits.File(output=True))
+
+    def list_outputs(self):
+        pass
+
+    def _run_process(self):
+        r = Report()
+        r.set_image(self.image)
+        pass
+
+# TODO: continue on monday
+"""
+
+# standard modules
+import textwrap
+import argparse
+from datetime import datetime
+from sys import exit, path, version, setrecursionlimit
+# path.insert(1, "/usr/bin/IRMAGE_python_modules") # only on mac
+from pickle import load, dump
+from json import load as json_load, dump as json_dump
+from os import mkdir, makedirs, system, environ, remove, sep, listdir
+from os.path import isfile, isdir
+from shutil import copyfile
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.pagesizes import A4, landscape, portrait
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
+
+# IRMaGe
+from IRMAGE_reporting import PageNumCanvas, ReportLine, plotPatVsRef, movQualPlot, acqPara, imgParam
+from IRMAGE_dataGestion import nbLigne, recupCover, recupParameter, dico2txt, unvivification, upvivification
+
+
+class Report(list):
+
+    def __init__(self):
+        super(Report, self).__init__()
+        # TODO: list attributes
+
+
+        self.generate_style()
+        self.generate_image()
+        self.generate_names()
+        self.generate_report()
+        pass
+
+    def generate_image(self):
+
+        # In ressources/images
+        self.im_entete = Image(imagePath + 'entete.png', 175.0 * mm, 30.0 * mm)  # 2508px × 430px
+
+    def generate_style(self):
+        self.styles = getSampleStyleSheet()  # Initialises stylesheet with few basic heading and text styles, return a stylesheet object.
+        self.styles.add(ParagraphStyle(name='Center',
+                                       alignment=TA_CENTER))  # ParagraphStyle gives all the attributes available for formatting paragraphs.
+        self.styles.add(ParagraphStyle(name='Center2', alignment=TA_CENTER))
+        self.styles['Center2'].leading = 24  # If more than 1 line.
+        self.styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
+        self.styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
+        self.styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
+        self.styles.add(ParagraphStyle(name='Bullet1',
+                                       leftIndent=30,
+                                       bulletOffsetY=2,
+                                       bulletIndent=20,
+                                       bulletFontSize=6,
+                                       bulletColor='black',
+                                       bulletText=u'●')
+                        )
+        self.styles.add(ParagraphStyle(name='Bullet2',
+                                       leftIndent=60,
+                                       bulletOffsetY=1,
+                                       bulletIndent=50,
+                                       bulletFontSize=6,
+                                       bulletColor='black',
+                                       bulletText=u'❍')
+                        )
+
+    def generate_names(self):
+        self.nomDuSuperLogiciel = '<font size=30><b>A</b></font><font size=11>utomatic</font>\
+                                  <font size=30><b>&nbsp M</b></font><font size=11>edical</font>\
+                                  <font size=30><b>&nbsp I</b></font><font size=11>mages</font>\
+                                  <font size=30><b>&nbsp G</b></font><font size=11>enerat</font><font size=30><b>O</b></font><font size=11>r</font>\
+                                  <font size=9><i>&nbsp V' + \
+                             [v for (k, v) in dico[patient_ref]['General informations'].items() if
+                              'Amigo version' in k][0] + '<br/> <br/> </i></font>'
+
+    def generate_report(self):
+        self.im_entete.hAlign = 'CENTER'
+        self.append(self.im_entete)
+
+        self.append(Spacer(0 * mm, 10 * mm))  # (width, height)
+
+        self.append(Paragraph(self.nomDuSuperLogiciel,
+                                 self.styles['Center']))
+
+        self.append(Spacer(0 * mm, 4 * mm))  # (width, height)
+
+        line = ReportLine(250)
+        line.hAlign = 'CENTER'
+        self.append(line)
+
+        self.append(Spacer(0 * mm, 20 * mm))
+
+        self.append(Paragraph(titre,
+                                 self.styles['Center']))
+
+        self.append(Spacer(0 * mm, 10 * mm))
+
+        data.setStyle(TableStyle([
+            ('LINEABOVE', (0, 0), (-1, 0), 2, colors.black),
+            ('LINEBELOW', (0, -1), (-1, -1), 2, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+        ]))  # Carefull: Table use (col,raw) and 0-base for top left start as usual OR -1-base for lower right start.
+
+        data.hAlign = 'CENTER'
+        self.append(data)
+
+        self.append(Spacer(0 * mm, 10 * mm))
+
+        self.append(Paragraph(texteDisclaimer,
+                                 self.styles["Justify"]))
+
+        self.append(PageBreak())
+"""
