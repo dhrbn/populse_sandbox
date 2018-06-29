@@ -391,7 +391,6 @@ class BOLD_disp(Process_mia):
         matlab_script += 'exit'
 
         # Running the function
-        print(matlab_script)
         test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
 
 
@@ -458,7 +457,6 @@ class ANAT_disp(Process_mia):
         matlab_script += 'exit'
 
         # Running the function
-        print(matlab_script)
         test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
 
 

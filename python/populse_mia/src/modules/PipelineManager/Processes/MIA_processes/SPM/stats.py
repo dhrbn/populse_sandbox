@@ -35,7 +35,7 @@ class Level1Design(Process_mia):
         self.add_trait("multi_reg", traits.List(traits.File(), output=False))
         self.add_trait("volterra_expansion_order", traits.Int(1, output=False, optional=True))
         self.add_trait("global_intensity_normalization", traits.Enum('none', 'scaling', output=False, optional=True))
-        self.add_trait("mask_image", traits.File(output=False))
+        self.add_trait("mask_image", InputMultiPath(output=False))
         self.add_trait("mask_threshold", traits.Float(0.8, output=False, optional=True))
         self.add_trait("model_serial_correlations", traits.Enum('AR(1)', 'FAST', 'none', output=False, optional=True))
 
@@ -71,7 +71,8 @@ class Level1Design(Process_mia):
         process.run()
 
         # Copying the generated SPM.mat file in the data directory
-        mask_image_folder, mask_image_name = os.path.split(self.mask_image)
+        mask_image = self.mask_image[0]
+        mask_image_folder, mask_image_name = os.path.split(mask_image)
         from shutil import copy2
         copy2(out_file, mask_image_folder)
 
@@ -89,6 +90,16 @@ class Level1Design(Process_mia):
         return session_info
 
     def list_outputs(self):
+
+        if not self.mask_image or self.mask_image in ['<undefined>', Undefined]:
+            return {}, {}
+
+        if not self.scans or self.scans in ['<undefined>', Undefined]:
+            return {}, {}
+
+        if not self.multi_reg or self.multi_reg in ['<undefined>', Undefined]:
+            return {}, {}
+
         # Copying the generated SPM.mat file in the data directory
         if self.scans and self.scans not in ['<undefined>', Undefined] \
                 and self.scans[0] not in ['<undefined>', Undefined]:
@@ -129,13 +140,14 @@ class EstimateModel(Process_mia):
     def list_outputs(self):
         process = spm.EstimateModel()
         if not self.spm_mat_file:
-            return {}
+            return {}, {}
         else:
             process.inputs.spm_mat_file = self.spm_mat_file
         if not self.estimation_method:
-            return {}
+            return {}, {}
         else:
             process.inputs.estimation_method = self.estimation_method
+
         process.inputs.write_residuals = self.write_residuals
         process.inputs.flags = self.flags
 
@@ -181,7 +193,7 @@ class EstimateContrast(Process_mia):
 
         # Outputs
         self.add_trait("con_images", OutputMultiPath(File(), optional=True, output=True))
-        self.add_trait("spmT_images ", OutputMultiPath(File(), optional=True, output=True))
+        self.add_trait("spmT_images", OutputMultiPath(File(), optional=True, output=True))
         self.add_trait("spmF_images", OutputMultiPath(File(), optional=True, output=True))
         self.add_trait("out_spm_mat_file", File(output=True, copyfile=False))
 
@@ -191,14 +203,17 @@ class EstimateContrast(Process_mia):
             return {}
         else:
             process.inputs.spm_mat_file = self.spm_mat_file
+
         if not self.contrasts:
             return {}
         else:
             process.inputs.contrasts = self.contrasts
+
         if not self.beta_images:
             return {}
         else:
             process.inputs.beta_images = self.beta_images
+
         if not self.residual_image:
             return {}
         else:
@@ -206,7 +221,7 @@ class EstimateContrast(Process_mia):
 
         outputs = process._list_outputs()
         outputs["out_spm_mat_file"] = outputs.pop("spm_mat_file")
-        return outputs
+        return outputs, {}
 
     def _run_process(self):
         spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)

@@ -200,11 +200,9 @@ class Resize(Process_mia):
 
         path, file_name = os.path.split(mask_name)
         file_name_no_ext, file_extension = os.path.splitext(file_name)
-        print("#########################################################################################",
-              "FILE NAME NO EXT IN RESIZE",
-              file_name_no_ext[-4:])
-        if file_name_no_ext[-4:] == "_002":
-            file_name_no_ext = file_name_no_ext[:-4]
+
+        if file_name_no_ext.strip()[-4:] == "_002":
+            file_name_no_ext = file_name_no_ext.strip()[:-4]
         out_file = os.path.join(path, self.prefix.strip() + file_name_no_ext + self.suffix.strip() + file_extension)
 
         d = {'out_file': out_file}
@@ -273,7 +271,7 @@ class Conv_ROI(Process_mia):
 
         # Inputs
         self.add_trait("roi_list", traits.List(output=False))
-        self.add_trait("mask", File(output=False))
+        self.add_trait("mask", InputMultiPath(output=False))
 
         # Outputs
         self.add_trait("out_masks", OutputMultiPath(output=True))
@@ -284,7 +282,9 @@ class Conv_ROI(Process_mia):
         if not self.mask:
             return {}
 
-        roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        mask = self.mask[0]
+
+        roi_dir = os.path.join(os.path.dirname(mask), 'roi')
         if not os.path.isdir(roi_dir):
             os.mkdir(roi_dir)
         if not os.path.isdir(os.path.join(roi_dir, 'convROI_BOLD')):
@@ -300,7 +300,9 @@ class Conv_ROI(Process_mia):
 
     def _run_process(self):
 
-        roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        mask = self.mask[0]
+
+        roi_dir = os.path.join(os.path.dirname(mask), 'roi')
         conv_dir = os.path.join(roi_dir, 'convROI_BOLD')
 
         # Resizing the mask to the size of the ROIs

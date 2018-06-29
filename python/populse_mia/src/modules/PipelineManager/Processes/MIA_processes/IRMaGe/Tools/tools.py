@@ -5,6 +5,36 @@ from nipype.interfaces.base import traits
 from PipelineManager.Process_mia import Process_mia
 
 
+class Duplicate_File(Process_mia):
+    """
+    From a file name, generating a list containing this file name and the file name itself.
+    """
+
+    def __init__(self):
+        super(Duplicate_File, self).__init__()
+
+        # Inputs
+        self.add_trait("file1", traits.File(output=False))
+
+        # Outputs
+        self.add_trait("out_file1", traits.File(output=True))
+        self.add_trait("out_file2", traits.File(output=True))
+
+    def list_outputs(self):
+        print('#' * 100)
+        print('#' * 100)
+        print('FILE_NAME DUPLICATE FILE', self.file1)
+        print('#' * 100)
+        print('#' * 100)
+        if not self.file1 or self.file1 in ["<undefined>", traits.Undefined]:
+            return {}, {}
+        return {"out_file1": self.file1, "out_file2": self.file1}, {}
+
+    def _run_process(self):
+        self.out_file1 = self.file1
+        self.out_file2 = self.file1
+
+
 class Find_In_List(Process_mia):
     """
     From a list, returning the element that contains the pattern.
