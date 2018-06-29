@@ -35,7 +35,7 @@ class Level1Design(Process_mia):
         self.add_trait("multi_reg", traits.List(traits.File(), output=False))
         self.add_trait("volterra_expansion_order", traits.Int(1, output=False, optional=True))
         self.add_trait("global_intensity_normalization", traits.Enum('none', 'scaling', output=False, optional=True))
-        self.add_trait("mask_image", traits.File(output=False, optional=True))
+        self.add_trait("mask_image", traits.File(output=False))
         self.add_trait("mask_threshold", traits.Float(0.8, output=False, optional=True))
         self.add_trait("model_serial_correlations", traits.Enum('AR(1)', 'FAST', 'none', output=False, optional=True))
 
@@ -90,10 +90,14 @@ class Level1Design(Process_mia):
 
     def list_outputs(self):
         # Copying the generated SPM.mat file in the data directory
-        mask_image_folder, mask_image_name = os.path.split(self.mask_image)
-        out_file = os.path.join(mask_image_folder, 'SPM.mat')
+        if self.scans and self.scans not in ['<undefined>', Undefined] \
+                and self.scans[0] not in ['<undefined>', Undefined]:
+            mask_image_folder, mask_image_name = os.path.split(self.scans[0])
+            out_file = os.path.join(mask_image_folder, 'SPM.mat')
 
-        d = {'spm_mat_file': out_file}
+            d = {'spm_mat_file': out_file}
+        else:
+            d = {}
         return d
 
 

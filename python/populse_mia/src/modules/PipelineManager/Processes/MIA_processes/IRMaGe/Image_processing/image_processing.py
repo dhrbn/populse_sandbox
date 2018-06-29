@@ -23,7 +23,7 @@ class Normalize_Spatial_Mask(Process_mia):
         # Inputs
         """self.add_trait("apply_to_files", InputMultiPath(traits.Either(
             ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))"""
-        self.add_trait("apply_to_files", traits.List(ImageFileSPM(), output=False))
+        self.add_trait("apply_to_files", traits.List(output=False))
         self.add_trait("deformation_file", ImageFileSPM(output=False))
 
         self.add_trait("jobtype", traits.String('write',
@@ -59,6 +59,10 @@ class Normalize_Spatial_Mask(Process_mia):
         return files
 
     def list_outputs(self):
+        print("LIST OUTPUT NORMALIZE SPATIAL MASK ######################################################")
+        print('APPLY TO FILES', self.apply_to_files)
+        print('DEFORMATION FILE', self.deformation_file)
+        print('JOBTYPE', self.jobtype)
         process = spm.Normalize12()
         if not self.apply_to_files:
             return {}
@@ -75,8 +79,9 @@ class Normalize_Spatial_Mask(Process_mia):
             process.inputs.jobtype = self.jobtype
 
         outputs = process._list_outputs()
+        print('OUTPUT NORMALIZE SPATIAL MASK', outputs)
 
-        return outputs
+        return outputs, {}
 
     def _run_process(self):
 
@@ -119,9 +124,10 @@ class Threshold(Process_mia):
                 return file_name
 
     def list_outputs(self):
-
+        print("LIST OUTPUT THRESHOLD ######################################################")
+        print(self.in_files)
         if not self.in_files:
-            return {}
+            return {}, {}
 
         if not self.suffix:
             self.suffix = ""
@@ -135,7 +141,8 @@ class Threshold(Process_mia):
         out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
 
         d = {'out_files': out_file}
-        return d
+        print('OUTPUT THRESHOLD', d)
+        return d, {}
 
     def _run_process(self):
 
@@ -193,6 +200,9 @@ class Resize(Process_mia):
 
         path, file_name = os.path.split(mask_name)
         file_name_no_ext, file_extension = os.path.splitext(file_name)
+        print("#########################################################################################",
+              "FILE NAME NO EXT IN RESIZE",
+              file_name_no_ext[-4:])
         if file_name_no_ext[-4:] == "_002":
             file_name_no_ext = file_name_no_ext[:-4]
         out_file = os.path.join(path, self.prefix.strip() + file_name_no_ext + self.suffix.strip() + file_extension)
@@ -275,6 +285,8 @@ class Conv_ROI(Process_mia):
             return {}
 
         roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        if not os.path.isdir(roi_dir):
+            os.mkdir(roi_dir)
         if not os.path.isdir(os.path.join(roi_dir, 'convROI_BOLD')):
             os.mkdir(os.path.join(roi_dir, 'convROI_BOLD'))
 
@@ -335,6 +347,8 @@ class Conv_ROI2(Process_mia):
             return {}
 
         roi_dir = os.path.join(os.path.dirname(self.mask), 'roi')
+        if not os.path.isdir(roi_dir):
+            os.mkdir(roi_dir)
         if not os.path.isdir(os.path.join(roi_dir, 'convROI_BOLD2')):
             os.mkdir(os.path.join(roi_dir, 'convROI_BOLD2'))
 

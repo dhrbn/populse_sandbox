@@ -21,13 +21,15 @@ class Find_In_List(Process_mia):
         self.add_trait("out_file", traits.File(output=True))
 
     def list_outputs(self):
-        for file in self.beta_images:
+        if not self.in_list or self.in_list in ["<undefined>", traits.Undefined]:
+            return {}, {}
+        for file in self.in_list:
             if self.pattern in file:
                 return {'out_file': file}, {}
 
     def _run_process(self):
         out_file = None
-        for file in self.beta_images:
+        for file in self.in_list:
             if self.pattern in file:
                 out_file = file
                 break
