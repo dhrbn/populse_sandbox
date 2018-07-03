@@ -84,9 +84,13 @@ class Files_To_List(Process_mia):
 
     def list_outputs(self):
         out_list = [self.file1, self.file2]
+        print("FILE1 IN FILE_TO_LIST", self.file1)
+        print("FILE2 IN FILE_TO_LIST", self.file2)
         return {'file_list': out_list}, {}
 
     def _run_process(self):
+        print("FILE1 IN FILE_TO_LIST", self.file1)
+        print("FILE2 IN FILE_TO_LIST", self.file2)
         out_list = [self.file1, self.file2]
         self.file_list = out_list
 

@@ -61,7 +61,12 @@ class Level1Design(Process_mia):
         process.inputs.bases = self.bases
         process.inputs.volterra_expansion_order = self.volterra_expansion_order
         process.inputs.global_intensity_normalization = self.global_intensity_normalization
-        process.inputs.mask_image = self.mask_image
+
+        if type(self.mask_image) in [list, traits.TraitListObject, traits.List]:
+            process.inputs.mask_image = os.path.abspath(self.mask_image[0])
+        else:
+            process.inputs.mask_image = os.path.abspath(self.mask_image)
+
         process.inputs.mask_threshold = self.mask_threshold
         process.inputs.model_serial_correlations = self.model_serial_correlations
 
@@ -71,7 +76,7 @@ class Level1Design(Process_mia):
         process.run()
 
         # Copying the generated SPM.mat file in the data directory
-        mask_image = self.mask_image[0]
+        mask_image = os.path.abspath(self.mask_image[0])
         mask_image_folder, mask_image_name = os.path.split(mask_image)
         from shutil import copy2
         copy2(out_file, mask_image_folder)
@@ -109,6 +114,8 @@ class Level1Design(Process_mia):
             d = {'spm_mat_file': out_file}
         else:
             d = {}
+
+        print('OUTPUT LEVEL1DESIGN:', d)
         return d
 
 
@@ -161,7 +168,7 @@ class EstimateModel(Process_mia):
         spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.EstimateModel()
-        process.inputs.spm_mat_file = self.spm_mat_file
+        process.inputs.spm_mat_file = os.path.abspath(self.spm_mat_file)
 
         # Removing the image files to avoid a bug
         outputs = self.list_outputs()
@@ -226,10 +233,10 @@ class EstimateContrast(Process_mia):
     def _run_process(self):
         spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
         process = spm.EstimateContrast()
-        process.inputs.spm_mat_file = self.spm_mat_file
+        process.inputs.spm_mat_file = os.path.abspath(self.spm_mat_file)
         process.inputs.contrasts = self.contrasts
         process.inputs.beta_images = self.beta_images
-        process.inputs.residual_image = self.residual_image
+        process.inputs.residual_image = os.path.abspath(self.residual_image)
         if self.use_derivs is not None:
             process.inputs.use_derivs = self.use_derivs
         else:

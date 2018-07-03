@@ -7,6 +7,7 @@ from skimage.transform import resize
 import nibabel as nib
 import numpy as np
 import subprocess
+import shutil
 
 from PipelineManager.Process_mia import Process_mia
 
@@ -19,6 +20,7 @@ class Write_results(Process_mia):
         # Inputs
         self.add_trait("parametric_maps", traits.List(traits.File(exists=True), output=False))
         self.add_trait("roi_list", traits.List(output=False))
+        self.add_trait("convroi_out_files", traits.List(output=False))
 
         # Outputs
         self.add_trait("mean_out_files", traits.List(traits.File(), output=True))
@@ -327,35 +329,53 @@ class BOLD_disp(Process_mia):
         super(BOLD_disp, self).__init__()
 
         # Inputs have to be .mat files
-        self.add_trait("matlab_function", traits.File(output=False))
-        self.add_trait("Patient", traits.File(output=False))
-        self.add_trait("plane", traits.File(output=False))
-        self.add_trait("tranche", traits.File(output=False))
-        self.add_trait("tresh", traits.File(output=False))
-        self.add_trait("native", traits.File(output=False))
-        self.add_trait("tranche_native", traits.File(output=False))
-        self.add_trait("output_directory", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_data", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_result", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_jpg", traits.Directory(output=False, optional=True))
-        self.add_trait("todo", traits.File(output=False, optional=True))
+        self.add_trait("normalized_anat", traits.List(output=False))
+        self.add_trait("smoothed_fonc", traits.List(output=False))
+        self.add_trait("conv_roi_masks", traits.List(output=False))
 
     def list_outputs(self):
-        pass
+        return {}, {}
 
     def _run_process(self):
+        self.normalized_anat = self.normalized_anat[0]
+        self.smoothed_fonc = self.smoothed_fonc[0]
+
+        patient_name = 'alej170316_testMIA24052018'
+        task_name = "hypc12"
+
+        # Renaming the anat file
+        raw_data_folder = os.path.split(os.path.abspath(self.normalized_anat))[0]
+        shutil.copy2(self.normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
+
+        # Renaming the smooth fonctional file
+        shutil.copy2(self.smoothed_fonc, os.path.join(raw_data_folder, 'swr' + patient_name + '_' + task_name + '.nii'))
+
         verbose = False
         function_inputs = ["Patient", "plane", "tranche", "tresh", "native", "tranche_native",
-                           "dir_data", "dir_result", "dir_jpg", "todo"]
+                           "dir_data", "dir_result", "dir_jpg", "todo", "image_anat"]
         # Loading mat files
         matlab_script = ""
         for attribute in function_inputs:
-            file_name = getattr(self, attribute)
-            matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
+            #  file_name = getattr(self, attribute)
+            if attribute == 'todo':
+                file_name = os.path.join('..', '..', 'ressources', 'reference_data', 'todo.mat')
+            else:
+                file_name = os.path.join('..', '..', 'ressources', 'reference_data', 'inputs.mat')
+            if attribute not in ["dir_data", "dir_result", "dir_jpg", "image_anat"]:
+                matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
             if attribute in ["dir_data", "dir_result", "dir_jpg", "todo"]:
+                if attribute == 'dir_data':
+                    matlab_script += "dir_data = '{0}';".format(os.path.join(raw_data_folder))
+                elif attribute == 'dir_result':
+                    matlab_script += "dir_result = '{0}';".format(os.path.join(raw_data_folder, 'result'))
+                elif attribute == 'dir_jpg':
+                    matlab_script += "dir_jpg = '{0}';".format(os.path.join(raw_data_folder, 'jpg'))
                 matlab_script += 'global {0};'.format(attribute)
+
             if verbose:
                 matlab_script += 'disp("{0} loaded");disp({1});'.format(attribute, attribute)
+
+        matlab_script += 'image_anat = "{0}";'.format(self.normalized_anat)
 
         # Checking if there is an output directory
         if hasattr(self, "output_directory"):
@@ -363,7 +383,8 @@ class BOLD_disp(Process_mia):
                 matlab_script += 'cd("{0}");'.format(self.output_directory)
 
         # Adding the function path
-        head, tail = os.path.split(self.matlab_function)
+        matlab_function = os.path.join('..', '..', 'ressources', 'BOLD_disp.m')
+        head, tail = os.path.split(matlab_function)
         if verbose:
             matlab_script += 'disp(pwd);'
         matlab_script += 'addpath("{0}");'.format(head)
@@ -379,13 +400,14 @@ class BOLD_disp(Process_mia):
         function_name = os.path.splitext(tail)[0]
 
         # Calling the function
-        matlab_script += '{0}({1},{2},{3},{4},{5},{6});'.format(function_name,
+        matlab_script += '{0}({1},{2},{3},{4},{5},{6},{7});'.format(function_name,
                                                                 "Patient",
                                                                 "plane",
                                                                 "tranche",
                                                                 "tresh",
                                                                 "native",
-                                                                "tranche_native")
+                                                                "tranche_native",
+                                                                "image_anat")
 
         # Exiting Matlab
         matlab_script += 'exit'
@@ -400,31 +422,45 @@ class ANAT_disp(Process_mia):
         super(ANAT_disp, self).__init__()
 
         # Inputs have to be .mat files
-        self.add_trait("matlab_function", traits.File(output=False))
-        self.add_trait("Patient", traits.File(output=False))
-        self.add_trait("plane", traits.File(output=False))
-        self.add_trait("tranche_native", traits.File(output=False))
-        self.add_trait("output_directory", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_data", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_result", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_jpg", traits.Directory(output=False, optional=True))
-        self.add_trait("todo", traits.File(output=False, optional=True))
+        self.add_trait("normalized_anat", traits.List(output=False))
 
     def list_outputs(self):
-        pass
+        return {}, {}
 
     def _run_process(self):
+
+        self.normalized_anat = self.normalized_anat[0]
+
+        patient_name = 'alej170316_testMIA24052018'
+
+        # Renaming the anat file
+        raw_data_folder = os.path.split(os.path.abspath(self.normalized_anat))[0]
+        shutil.copy2(self.normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
+
         verbose = False
         function_inputs = ["Patient", "plane", "tranche_native", "dir_data", "dir_result", "dir_jpg", "todo"]
         # Loading mat files
         matlab_script = ""
         for attribute in function_inputs:
-            file_name = getattr(self, attribute)
-            matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
+            #  file_name = getattr(self, attribute)
+            if attribute == 'todo':
+                file_name = os.path.join('..', '..', 'ressources', 'reference_data', 'todo.mat')
+            else:
+                file_name = os.path.join('..', '..', 'ressources', 'reference_data', 'inputs.mat')
+            if attribute not in ["dir_data", "dir_result", "dir_jpg", "image_anat"]:
+                matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
             if attribute in ["dir_data", "dir_result", "dir_jpg", "todo"]:
+                if attribute == 'dir_data':
+                    matlab_script += "dir_data = '{0}';".format(os.path.join(raw_data_folder))
+                elif attribute == 'dir_result':
+                    matlab_script += "dir_result = '{0}';".format(os.path.join(raw_data_folder, 'result'))
+                elif attribute == 'dir_jpg':
+                    matlab_script += "dir_jpg = '{0}';".format(os.path.join(raw_data_folder, 'jpg'))
                 matlab_script += 'global {0};'.format(attribute)
+
             if verbose:
                 matlab_script += 'disp("{0} loaded");disp({1});'.format(attribute, attribute)
+
 
         # Checking if there is an output directory
         if hasattr(self, "output_directory"):
@@ -432,7 +468,8 @@ class ANAT_disp(Process_mia):
                 matlab_script += 'cd("{0}");'.format(self.output_directory)
 
         # Adding the function path
-        head, tail = os.path.split(self.matlab_function)
+        matlab_function = "ANAT_disp.m"
+        head, tail = os.path.split(matlab_function)
         if verbose:
             matlab_script += 'disp(pwd);'
         matlab_script += 'addpath("{0}");'.format(head)
@@ -466,27 +503,55 @@ class Timecourse_fullTask(Process_mia):
         super(Timecourse_fullTask, self).__init__()
 
         # Inputs have to be .mat files
-        self.add_trait("matlab_function", traits.File(output=False))
-        self.add_trait("Patient", traits.File(output=False))
-        self.add_trait("output_directory", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_data", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_result", traits.Directory(output=False, optional=True))
-        self.add_trait("dir_jpg", traits.Directory(output=False, optional=True))
-        self.add_trait("todo", traits.File(output=False, optional=True))
+        self.add_trait("normalized_anat", traits.List(output=False))
+        self.add_trait("smoothed_fonc", traits.List(output=False))
 
     def list_outputs(self):
-        pass
+        return {}, {}
 
     def _run_process(self):
+
+        self.normalized_anat = self.normalized_anat[0]
+        self.smoothed_fonc = self.smoothed_fonc[0]
+
+        patient_name = 'alej170316_testMIA24052018'
+        task_name = "hypc12"
+
+        # Renaming the anat file
+        raw_data_folder = os.path.split(os.path.abspath(self.normalized_anat))[0]
+        shutil.copy2(self.normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
+
+        # Renaming the smooth fonctional file
+        shutil.copy2(self.smoothed_fonc, os.path.join(raw_data_folder,
+                                                      'swr' + patient_name + '_' + task_name + '_001.nii'))
+
+        # Renaming a mask
+        anat_basename = os.path.split(self.normalized_anat)[1]
+        mask_file = 'mask_swc1' + anat_basename[1:-4] + '_003.nii'
+        if os.path.isfile(mask_file):
+            shutil.copy2(mask_file, os.path.join(raw_data_folder, 'mask_swc1' + patient_name + '_anat_003.nii'))
+
         verbose = True
         function_inputs = ["Patient", "dir_data", "dir_result", "dir_jpg", "todo"]
         # Loading mat files
         matlab_script = ""
         for attribute in function_inputs:
-            file_name = getattr(self, attribute)
-            matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
-            if attribute in ["dir_data", "dir_result", "dir_jpg", "todo", "Patient"]:
+            #  file_name = getattr(self, attribute)
+            if attribute == 'todo':
+                file_name = os.path.join('..', '..', 'ressources', 'reference_data', 'todo.mat')
+            else:
+                file_name = os.path.join('..', '..', 'ressources', 'reference_data', 'inputs.mat')
+            if attribute not in ["dir_data", "dir_result", "dir_jpg", "image_anat"]:
+                matlab_script += 'load("{0}","{1}");'.format(file_name, attribute)
+            if attribute in ["dir_data", "dir_result", "dir_jpg", "todo"]:
+                if attribute == 'dir_data':
+                    matlab_script += "dir_data = '{0}';".format(os.path.join(raw_data_folder))
+                elif attribute == 'dir_result':
+                    matlab_script += "dir_result = '{0}';".format(os.path.join(raw_data_folder, 'result'))
+                elif attribute == 'dir_jpg':
+                    matlab_script += "dir_jpg = '{0}';".format(os.path.join(raw_data_folder, 'jpg'))
                 matlab_script += 'global {0};'.format(attribute)
+
             if verbose:
                 matlab_script += 'disp("{0} loaded");disp({1});'.format(attribute, attribute)
 
@@ -496,7 +561,8 @@ class Timecourse_fullTask(Process_mia):
                 matlab_script += 'cd("{0}");'.format(self.output_directory)
 
         # Adding the function path
-        head, tail = os.path.split(self.matlab_function)
+        matlab_function = "timecourse_fullTask.m"
+        head, tail = os.path.split(matlab_function)
         if verbose:
             matlab_script += 'disp(pwd);'
         matlab_script += 'addpath("{0}");'.format(head)
@@ -521,141 +587,3 @@ class Timecourse_fullTask(Process_mia):
         test = subprocess.run(['matlab', '-nodisplay', '-r', matlab_script])
         # test = subprocess.run(['matlab', '-r', matlab_script])
 
-
-class CVR_Report(Process_mia):
-
-    def __init__(self):
-        super(CVR_Report, self).__init__()
-
-        # Inputs
-        self.add_trait("image", traits.List(traits.File(exists=True), output=False))
-        self.add_trait("", traits.List(output=False))
-
-        # Outputs
-        self.add_trait("report", traits.File(output=True))
-
-    def list_outputs(self):
-        pass
-
-    def _run_process(self):
-        r = Report()
-        r.set_image(self.image)
-        pass
-
-# TODO: continue on monday
-"""
-
-# standard modules
-import textwrap
-import argparse
-from datetime import datetime
-from sys import exit, path, version, setrecursionlimit
-# path.insert(1, "/usr/bin/IRMAGE_python_modules") # only on mac
-from pickle import load, dump
-from json import load as json_load, dump as json_dump
-from os import mkdir, makedirs, system, environ, remove, sep, listdir
-from os.path import isfile, isdir
-from shutil import copyfile
-from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
-from reportlab.lib.pagesizes import A4, landscape, portrait
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import mm
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak
-
-# IRMaGe
-from IRMAGE_reporting import PageNumCanvas, ReportLine, plotPatVsRef, movQualPlot, acqPara, imgParam
-from IRMAGE_dataGestion import nbLigne, recupCover, recupParameter, dico2txt, unvivification, upvivification
-
-
-class Report(list):
-
-    def __init__(self):
-        super(Report, self).__init__()
-        # TODO: list attributes
-
-
-        self.generate_style()
-        self.generate_image()
-        self.generate_names()
-        self.generate_report()
-        pass
-
-    def generate_image(self):
-
-        # In ressources/images
-        self.im_entete = Image(imagePath + 'entete.png', 175.0 * mm, 30.0 * mm)  # 2508px × 430px
-
-    def generate_style(self):
-        self.styles = getSampleStyleSheet()  # Initialises stylesheet with few basic heading and text styles, return a stylesheet object.
-        self.styles.add(ParagraphStyle(name='Center',
-                                       alignment=TA_CENTER))  # ParagraphStyle gives all the attributes available for formatting paragraphs.
-        self.styles.add(ParagraphStyle(name='Center2', alignment=TA_CENTER))
-        self.styles['Center2'].leading = 24  # If more than 1 line.
-        self.styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
-        self.styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
-        self.styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
-        self.styles.add(ParagraphStyle(name='Bullet1',
-                                       leftIndent=30,
-                                       bulletOffsetY=2,
-                                       bulletIndent=20,
-                                       bulletFontSize=6,
-                                       bulletColor='black',
-                                       bulletText=u'●')
-                        )
-        self.styles.add(ParagraphStyle(name='Bullet2',
-                                       leftIndent=60,
-                                       bulletOffsetY=1,
-                                       bulletIndent=50,
-                                       bulletFontSize=6,
-                                       bulletColor='black',
-                                       bulletText=u'❍')
-                        )
-
-    def generate_names(self):
-        self.nomDuSuperLogiciel = '<font size=30><b>A</b></font><font size=11>utomatic</font>\
-                                  <font size=30><b>&nbsp M</b></font><font size=11>edical</font>\
-                                  <font size=30><b>&nbsp I</b></font><font size=11>mages</font>\
-                                  <font size=30><b>&nbsp G</b></font><font size=11>enerat</font><font size=30><b>O</b></font><font size=11>r</font>\
-                                  <font size=9><i>&nbsp V' + \
-                             [v for (k, v) in dico[patient_ref]['General informations'].items() if
-                              'Amigo version' in k][0] + '<br/> <br/> </i></font>'
-
-    def generate_report(self):
-        self.im_entete.hAlign = 'CENTER'
-        self.append(self.im_entete)
-
-        self.append(Spacer(0 * mm, 10 * mm))  # (width, height)
-
-        self.append(Paragraph(self.nomDuSuperLogiciel,
-                                 self.styles['Center']))
-
-        self.append(Spacer(0 * mm, 4 * mm))  # (width, height)
-
-        line = ReportLine(250)
-        line.hAlign = 'CENTER'
-        self.append(line)
-
-        self.append(Spacer(0 * mm, 20 * mm))
-
-        self.append(Paragraph(titre,
-                                 self.styles['Center']))
-
-        self.append(Spacer(0 * mm, 10 * mm))
-
-        data.setStyle(TableStyle([
-            ('LINEABOVE', (0, 0), (-1, 0), 2, colors.black),
-            ('LINEBELOW', (0, -1), (-1, -1), 2, colors.black),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-        ]))  # Carefull: Table use (col,raw) and 0-base for top left start as usual OR -1-base for lower right start.
-
-        data.hAlign = 'CENTER'
-        self.append(data)
-
-        self.append(Spacer(0 * mm, 10 * mm))
-
-        self.append(Paragraph(texteDisclaimer,
-                                 self.styles["Justify"]))
-
-        self.append(PageBreak())
-"""

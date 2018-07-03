@@ -7,6 +7,7 @@ import os
 from nipype.interfaces import spm
 from skimage.transform import resize
 import nibabel as nib
+from distutils.dir_util import copy_tree
 
 # MIA import
 from PipelineManager.Process_mia import Process_mia
@@ -287,6 +288,10 @@ class Conv_ROI(Process_mia):
         roi_dir = os.path.join(os.path.dirname(mask), 'roi')
         if not os.path.isdir(roi_dir):
             os.mkdir(roi_dir)
+            # Copying the ROIs from the ressources folder
+            ref_dir = os.path.join('..', '..', 'ressources', 'reference_data', 'roi')
+            copy_tree(ref_dir, roi_dir)
+
         if not os.path.isdir(os.path.join(roi_dir, 'convROI_BOLD')):
             os.mkdir(os.path.join(roi_dir, 'convROI_BOLD'))
 
@@ -303,7 +308,12 @@ class Conv_ROI(Process_mia):
         mask = self.mask[0]
 
         roi_dir = os.path.join(os.path.dirname(mask), 'roi')
+        if not os.path.isdir(roi_dir):
+            os.mkdir(roi_dir)
         conv_dir = os.path.join(roi_dir, 'convROI_BOLD')
+
+        if not os.path.isdir(os.path.join(roi_dir, 'convROI_BOLD')):
+            os.mkdir(os.path.join(roi_dir, 'convROI_BOLD'))
 
         # Resizing the mask to the size of the ROIs
         roi_1 = self.roi_list[0]
@@ -312,8 +322,9 @@ class Conv_ROI(Process_mia):
         roi_data = roi_img.get_data()
         roi_size = roi_data.shape[:3]
 
-        mask_thresh = threshold(self.mask, 0.5).get_data()
+        mask_thresh = threshold(mask, 0.5).get_data()
         resized_mask = resize(mask_thresh, roi_size)
+
 
         for roi in self.roi_list:
             roi_file = os.path.join(roi_dir, roi[0] + roi[1] + '.nii')
