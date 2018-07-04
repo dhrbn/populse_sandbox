@@ -1,5 +1,5 @@
 # Trait import
-from nipype.interfaces.base import traits
+from nipype.interfaces.base import traits, InputMultiPath
 
 # Other import
 import os
@@ -329,26 +329,38 @@ class BOLD_disp(Process_mia):
         super(BOLD_disp, self).__init__()
 
         # Inputs have to be .mat files
-        self.add_trait("normalized_anat", traits.List(output=False))
-        self.add_trait("smoothed_fonc", traits.List(output=False))
+        self.add_trait("normalized_anat", InputMultiPath(output=False))
+        self.add_trait("smoothed_fonc", InputMultiPath(output=False))
         self.add_trait("conv_roi_masks", traits.List(output=False))
 
     def list_outputs(self):
         return {}, {}
 
     def _run_process(self):
-        self.normalized_anat = self.normalized_anat[0]
-        self.smoothed_fonc = self.smoothed_fonc[0]
+
+        """if type(self.normalized_anat) in [list, traits.TraitListObject]:
+            self.normalized_anat = self.normalized_anat[0]
+        if type(self.smoothed_fonc) in [list, traits.TraitListObject]:
+            self.smoothed_fonc = self.smoothed_fonc[0]"""
+
+        if isinstance(self.normalized_anat, list) or isinstance(self.normalized_anat, traits.TraitListObject):
+            normalized_anat = self.normalized_anat[0]
+        else:
+            normalized_anat = self.normalized_anat
+        if isinstance(self.smoothed_fonc, list) or isinstance(self.smoothed_fonc, traits.TraitListObject):
+            smoothed_fonc = self.smoothed_fonc[0]
+        else:
+            smoothed_fonc = self.smoothed_fonc
 
         patient_name = 'alej170316_testMIA24052018'
         task_name = "hypc12"
 
         # Renaming the anat file
-        raw_data_folder = os.path.split(os.path.abspath(self.normalized_anat))[0]
-        shutil.copy2(self.normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
+        raw_data_folder = os.path.split(os.path.abspath(normalized_anat))[0]
+        shutil.copy2(normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
 
         # Renaming the smooth fonctional file
-        shutil.copy2(self.smoothed_fonc, os.path.join(raw_data_folder, 'swr' + patient_name + '_' + task_name + '.nii'))
+        shutil.copy2(smoothed_fonc, os.path.join(raw_data_folder, 'swr' + patient_name + '_' + task_name + '.nii'))
 
         verbose = False
         function_inputs = ["Patient", "plane", "tranche", "tresh", "native", "tranche_native",
@@ -375,7 +387,7 @@ class BOLD_disp(Process_mia):
             if verbose:
                 matlab_script += 'disp("{0} loaded");disp({1});'.format(attribute, attribute)
 
-        matlab_script += 'image_anat = "{0}";'.format(self.normalized_anat)
+        matlab_script += 'image_anat = "{0}";'.format(normalized_anat)
 
         # Checking if there is an output directory
         if hasattr(self, "output_directory"):
@@ -422,20 +434,25 @@ class ANAT_disp(Process_mia):
         super(ANAT_disp, self).__init__()
 
         # Inputs have to be .mat files
-        self.add_trait("normalized_anat", traits.List(output=False))
+        self.add_trait("normalized_anat", InputMultiPath(output=False))
 
     def list_outputs(self):
         return {}, {}
 
     def _run_process(self):
 
-        self.normalized_anat = self.normalized_anat[0]
+        """if type(self.normalized_anat) in [list, traits.TraitListObject]:
+            self.normalized_anat = self.normalized_anat[0]"""
+        if isinstance(self.normalized_anat, list) or isinstance(self.normalized_anat, traits.TraitListObject):
+            normalized_anat = self.normalized_anat[0]
+        else:
+            normalized_anat = self.normalized_anat
 
         patient_name = 'alej170316_testMIA24052018'
 
         # Renaming the anat file
-        raw_data_folder = os.path.split(os.path.abspath(self.normalized_anat))[0]
-        shutil.copy2(self.normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
+        raw_data_folder = os.path.split(os.path.abspath(normalized_anat))[0]
+        shutil.copy2(normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
 
         verbose = False
         function_inputs = ["Patient", "plane", "tranche_native", "dir_data", "dir_result", "dir_jpg", "todo"]
@@ -503,30 +520,42 @@ class Timecourse_fullTask(Process_mia):
         super(Timecourse_fullTask, self).__init__()
 
         # Inputs have to be .mat files
-        self.add_trait("normalized_anat", traits.List(output=False))
-        self.add_trait("smoothed_fonc", traits.List(output=False))
+        self.add_trait("normalized_anat", InputMultiPath(output=False))
+        self.add_trait("smoothed_fonc", InputMultiPath(output=False))
 
     def list_outputs(self):
         return {}, {}
 
     def _run_process(self):
 
-        self.normalized_anat = self.normalized_anat[0]
-        self.smoothed_fonc = self.smoothed_fonc[0]
+        """if type(self.normalized_anat) in [list, traits.TraitListObject]:
+            self.normalized_anat = self.normalized_anat[0]
+        if type(self.smoothed_fonc) in [list, traits.TraitListObject]:
+            self.smoothed_fonc = self.smoothed_fonc[0]"""
+
+        if isinstance(self.normalized_anat, list) or isinstance(self.normalized_anat, traits.TraitListObject):
+            normalized_anat = self.normalized_anat[0]
+        else:
+            normalized_anat = self.normalized_anat
+        if isinstance(self.smoothed_fonc, list) or isinstance(self.smoothed_fonc, traits.TraitListObject):
+            smoothed_fonc = self.smoothed_fonc[0]
+        else:
+            smoothed_fonc = self.smoothed_fonc
+
 
         patient_name = 'alej170316_testMIA24052018'
         task_name = "hypc12"
 
         # Renaming the anat file
-        raw_data_folder = os.path.split(os.path.abspath(self.normalized_anat))[0]
-        shutil.copy2(self.normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
+        raw_data_folder = os.path.split(os.path.abspath(normalized_anat))[0]
+        shutil.copy2(normalized_anat, os.path.join(raw_data_folder, 'w' + patient_name + '_anat_001.nii'))
 
         # Renaming the smooth fonctional file
-        shutil.copy2(self.smoothed_fonc, os.path.join(raw_data_folder,
+        shutil.copy2(smoothed_fonc, os.path.join(raw_data_folder,
                                                       'swr' + patient_name + '_' + task_name + '_001.nii'))
 
         # Renaming a mask
-        anat_basename = os.path.split(self.normalized_anat)[1]
+        anat_basename = os.path.split(normalized_anat)[1]
         mask_file = 'mask_swc1' + anat_basename[1:-4] + '_003.nii'
         if os.path.isfile(mask_file):
             shutil.copy2(mask_file, os.path.join(raw_data_folder, 'mask_swc1' + patient_name + '_anat_003.nii'))
