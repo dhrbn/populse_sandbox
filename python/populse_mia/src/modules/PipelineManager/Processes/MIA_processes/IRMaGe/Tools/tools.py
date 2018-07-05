@@ -84,13 +84,9 @@ class Files_To_List(Process_mia):
 
     def list_outputs(self):
         out_list = [self.file1, self.file2]
-        print("FILE1 IN FILE_TO_LIST", self.file1)
-        print("FILE2 IN FILE_TO_LIST", self.file2)
         return {'file_list': out_list}, {}
 
     def _run_process(self):
-        print("FILE1 IN FILE_TO_LIST", self.file1)
-        print("FILE2 IN FILE_TO_LIST", self.file2)
         out_list = [self.file1, self.file2]
         self.file_list = out_list
 
@@ -201,3 +197,22 @@ class Populse_Filter(Process_mia):
 """
 
 
+class Test_Bug(Process_mia):
+    """
+    From several file names, generating a list containing all theses file names.
+    """
+
+    def __init__(self):
+        super(Test_Bug, self).__init__()
+        # Inputs
+        self.add_trait("in", traits.Float(output=False))
+
+        # Outputs
+        self.add_trait("out_file1", traits.File(output=True, optional=True))
+        self.add_trait("out_file2", traits.File(output=True))
+
+    def list_outputs(self):
+        return {"out_file1": self.out_file1, "out_file2": "/tmp/test.txt"}, {}
+
+    def _run_process(self):
+        self.out_file2 = "/tmp/test.txt"
