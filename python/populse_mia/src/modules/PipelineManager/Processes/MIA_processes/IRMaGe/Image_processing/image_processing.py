@@ -325,7 +325,6 @@ class Conv_ROI(Process_mia):
         mask_thresh = threshold(mask, 0.5).get_data()
         resized_mask = resize(mask_thresh, roi_size)
 
-
         for roi in self.roi_list:
             roi_file = os.path.join(roi_dir, roi[0] + roi[1] + '.nii')
             roi_img = nib.load(roi_file)

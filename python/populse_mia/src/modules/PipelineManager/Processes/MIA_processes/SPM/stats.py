@@ -181,6 +181,7 @@ class EstimateModel(Process_mia):
         process.inputs.estimation_method = self.estimation_method
         process.inputs.write_residuals = self.write_residuals
         process.inputs.flags = self.flags
+        process.version = self.version
 
         process.run()
 
