@@ -21,11 +21,6 @@ class Duplicate_File(Process_mia):
         self.add_trait("out_file2", traits.File(output=True))
 
     def list_outputs(self):
-        print('#' * 100)
-        print('#' * 100)
-        print('FILE_NAME DUPLICATE FILE', self.file1)
-        print('#' * 100)
-        print('#' * 100)
         if not self.file1 or self.file1 in ["<undefined>", traits.Undefined]:
             return {}, {}
         return {"out_file1": self.file1, "out_file2": self.file1}, {}
