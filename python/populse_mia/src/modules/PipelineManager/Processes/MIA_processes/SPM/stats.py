@@ -115,7 +115,6 @@ class Level1Design(Process_mia):
         else:
             d = {}
 
-        print('OUTPUT LEVEL1DESIGN:', d)
         return d
 
 
