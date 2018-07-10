@@ -60,10 +60,6 @@ class Normalize_Spatial_Mask(Process_mia):
         return files
 
     def list_outputs(self):
-        print("LIST OUTPUT NORMALIZE SPATIAL MASK ######################################################")
-        print('APPLY TO FILES', self.apply_to_files)
-        print('DEFORMATION FILE', self.deformation_file)
-        print('JOBTYPE', self.jobtype)
         process = spm.Normalize12()
         if not self.apply_to_files:
             return {}
@@ -80,7 +76,6 @@ class Normalize_Spatial_Mask(Process_mia):
             process.inputs.jobtype = self.jobtype
 
         outputs = process._list_outputs()
-        print('OUTPUT NORMALIZE SPATIAL MASK', outputs)
 
         return outputs, {}
 
@@ -125,8 +120,6 @@ class Threshold(Process_mia):
                 return file_name
 
     def list_outputs(self):
-        print("LIST OUTPUT THRESHOLD ######################################################")
-        print(self.in_files)
         if not self.in_files:
             return {}, {}
 
@@ -139,10 +132,9 @@ class Threshold(Process_mia):
         file_name = self._check_file_names()
         path, file_name = os.path.split(file_name)
         file_name_no_ext, file_extension = os.path.splitext(file_name)
-        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
+        out_file = os.path.join(path, self.prefix.strip() + file_name_no_ext + self.suffix.strip() + file_extension)
 
         d = {'out_files': out_file}
-        print('OUTPUT THRESHOLD', d)
         return d, {}
 
     def _run_process(self):
@@ -163,7 +155,7 @@ class Threshold(Process_mia):
         # Image save
         path, file_name = os.path.split(file_name)
         file_name_no_ext, file_extension = os.path.splitext(file_name)
-        out_file = os.path.join(path, self.prefix + file_name_no_ext + self.suffix + file_extension)
+        out_file = os.path.join(path, self.prefix.strip() + file_name_no_ext + self.suffix.strip() + file_extension)
         nib.save(img_final, out_file)
 
 
@@ -282,7 +274,6 @@ class Conv_ROI(Process_mia):
             return {}
         if not self.mask:
             return {}
-
         mask = self.mask[0]
 
         roi_dir = os.path.join(os.path.dirname(mask), 'roi')

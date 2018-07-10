@@ -388,8 +388,6 @@ class Coregister(Process_mia):
         if self.jobtype == "estimate":
             outputs["coregistered_files"] = self.apply_to_files
 
-        print('OUTPUT COREG', outputs)
-
         return outputs, {}
 
     def _run_process(self):
