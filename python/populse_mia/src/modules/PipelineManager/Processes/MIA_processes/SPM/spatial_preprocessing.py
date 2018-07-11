@@ -10,6 +10,7 @@ from nipype.interfaces import spm
 # MIA import
 from PipelineManager.Process_mia import Process_mia
 from SoftwareProperties.Config import Config
+from .nipype_extension import NewSegmentIrmage
 
 config = Config()
 
@@ -132,7 +133,7 @@ class NewSegment(Process_mia):
         self.add_trait("native_class_images", traits.List(traits.List(File()), output=True))
 
     def list_outputs(self):
-        process = spm.NewSegment()
+        process = NewSegmentIrmage()
 
         if not self.channel_files:
             return {}
