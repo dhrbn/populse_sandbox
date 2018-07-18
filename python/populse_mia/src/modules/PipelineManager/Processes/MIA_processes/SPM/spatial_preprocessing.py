@@ -71,7 +71,8 @@ class Smooth(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Smooth()
         for idx, element in enumerate(self.in_files):
@@ -177,7 +178,8 @@ class NewSegment(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.NewSegment()
         process.inputs.affine_regularization = self.affine_regularization
@@ -239,7 +241,8 @@ class Normalize(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Normalize12()
         process.inputs.apply_to_files = self.apply_to_files
@@ -318,7 +321,8 @@ class Realign(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Realign()
         process.inputs.in_files = self.in_files
@@ -393,7 +397,8 @@ class Coregister(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Coregister()
         process.inputs.target = self.target

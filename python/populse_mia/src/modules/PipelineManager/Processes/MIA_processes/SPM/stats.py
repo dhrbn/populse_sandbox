@@ -50,7 +50,8 @@ class Level1Design(Process_mia):
         if os.path.isfile(out_file):
             os.remove(out_file)
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Level1Design()
         process.inputs.timing_units = self.timing_units
@@ -164,7 +165,8 @@ class EstimateModel(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.EstimateModel()
         process.inputs.spm_mat_file = os.path.abspath(self.spm_mat_file)
@@ -230,7 +232,9 @@ class EstimateContrast(Process_mia):
         return outputs, {}
 
     def _run_process(self):
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+
         process = spm.EstimateContrast()
         process.inputs.spm_mat_file = os.path.abspath(self.spm_mat_file)
         process.inputs.contrasts = self.contrasts

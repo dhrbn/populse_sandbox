@@ -81,7 +81,8 @@ class Normalize_Spatial_Mask(Process_mia):
 
     def _run_process(self):
 
-        spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
+        # Can be removed if the SPMMCRCMD and FORCE_SPMMCR environment variable are set correctly.
+        # spm.SPMCommand.set_mlab_paths(matlab_cmd=config.get_matlab_command(), use_mcr=True)
 
         process = spm.Normalize12()
         process.inputs.apply_to_files = self._check_file_names()
