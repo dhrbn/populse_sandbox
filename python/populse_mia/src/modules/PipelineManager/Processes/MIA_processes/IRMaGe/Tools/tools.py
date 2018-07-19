@@ -180,22 +180,7 @@ class Populse_Filter(Process_mia):
         return {'output': output}
 
     def _run_process(self):
-        if self.input:
-            self.scans_list = self.input
-        else:
-            self.scans_list = self.project.database.get_documents_names()
-        self.output = []
-        filt = self.filter
-        # TODO: WHAT FUNCTION TO CALL
-        output = self.database.get_documents_matching_advanced_search(filt.links, filt.fields, filt.conditions,
-                                                                      filt.values, filt.nots,
-                                                                      self.scans_list)
-
-        for idx, element in enumerate(output):
-            full_path = os.path.join(self.project.folder, element)
-            output[idx] = full_path
-
-        self.output = output
+        return
 
 
 class Test_Bug(Process_mia):
