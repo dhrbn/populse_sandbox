@@ -150,13 +150,13 @@ class ROI_List_Generator(Process_mia):
 
 class Populse_Filter(Process_mia):
 
-    def __init__(self, scans_list=None):
+    def __init__(self):
         super(Populse_Filter, self).__init__()
 
-        if scans_list:
+        """if scans_list:
             self.scans_list = scans_list
         else:
-            self.scans_list = self.project.database.get_documents_names()
+            self.scans_list = self.project.database.get_documents_names()"""
         self.filter = Filter(None, [], [], [], [], [], "")
 
         self.add_trait("input", traits.List(traits.File, output=False))
@@ -171,8 +171,8 @@ class Populse_Filter(Process_mia):
             self.scans_list = self.project.database.get_documents_names()
 
         filt = self.filter
-        output = []
-        #TODO: write output
+        output = filt.generate_filter(self.project, self.scans_list, self.project.session.get_visibles())
+
         for idx, element in enumerate(output):
             full_path = os.path.join(self.project.folder, element)
             output[idx] = full_path
