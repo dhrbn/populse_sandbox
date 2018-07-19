@@ -31,6 +31,7 @@ class Smooth(Process_mia):
         self.add_trait("smoothed_files", OutputMultiPath(File(), output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = spm.Smooth()
 
         if not self.in_files:
@@ -134,6 +135,7 @@ class NewSegment(Process_mia):
         self.add_trait("native_class_images", traits.List(traits.List(File()), output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = NewSegmentIrmage()
 
         if not self.channel_files:
@@ -221,6 +223,7 @@ class Normalize(Process_mia):
         self.add_trait("normalized_files", OutputMultiPath(File(), output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = spm.Normalize12()
         if not self.apply_to_files:
             return {}
@@ -311,6 +314,7 @@ class Realign(Process_mia):
         self.add_trait("realignment_parameters", File(output=True)) #rp_
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = spm.Realign()
         if not self.in_files:
             return {}
@@ -371,6 +375,7 @@ class Coregister(Process_mia):
         self.add_trait("coregistered_files", OutputMultiPath(File(), output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = spm.Coregister()
         if not self.target:
             return {}

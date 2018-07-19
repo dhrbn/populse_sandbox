@@ -27,6 +27,7 @@ class Write_results(Process_mia):
         self.add_trait("std_out_files", traits.List(traits.File(), output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         if not self.roi_list:
             return {}
         if not self.parametric_maps:
@@ -144,6 +145,7 @@ class Grattefile(Process_mia):
         self.add_trait("out_files", traits.List(traits.File(), output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         if not self.calculs:
             return {}
         if not self.parametric_maps:
@@ -334,6 +336,7 @@ class BOLD_disp(Process_mia):
         self.add_trait("conv_roi_masks", traits.List(output=False))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         return {}, {}
 
     def _run_process(self):
@@ -437,6 +440,7 @@ class ANAT_disp(Process_mia):
         self.add_trait("normalized_anat", InputMultiPath(output=False))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         return {}, {}
 
     def _run_process(self):
@@ -524,6 +528,7 @@ class Timecourse_fullTask(Process_mia):
         self.add_trait("smoothed_fonc", InputMultiPath(output=False))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         return {}, {}
 
     def _run_process(self):

@@ -60,6 +60,7 @@ class Normalize_Spatial_Mask(Process_mia):
         return files
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = spm.Normalize12()
         if not self.apply_to_files:
             return {}
@@ -121,6 +122,7 @@ class Threshold(Process_mia):
                 return file_name
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         if not self.in_files:
             return {}, {}
 
@@ -178,6 +180,7 @@ class Resize(Process_mia):
         self.add_trait("out_file", ImageFileSPM(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
 
         if not self.mask_to_resize:
             return {}
@@ -271,6 +274,7 @@ class Conv_ROI(Process_mia):
         self.add_trait("out_masks", OutputMultiPath(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         if not self.roi_list:
             return {}
         if not self.mask:
@@ -345,6 +349,7 @@ class Conv_ROI2(Process_mia):
         self.add_trait("out_masks2", OutputMultiPath(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         if not self.roi_list:
             return {}
         if not self.mask:

@@ -96,6 +96,7 @@ class Level1Design(Process_mia):
         return session_info
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
 
         if not self.mask_image or self.mask_image in ['<undefined>', Undefined]:
             return {}, {}
@@ -145,6 +146,7 @@ class EstimateModel(Process_mia):
         self.add_trait("SDbetas", OutputMultiPath(ImageFileSPM(), output=True, optional=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = spm.EstimateModel()
         if not self.spm_mat_file:
             return {}, {}
@@ -206,6 +208,7 @@ class EstimateContrast(Process_mia):
         self.add_trait("out_spm_mat_file", File(output=True, copyfile=False))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         process = spm.EstimateContrast()
         if not self.spm_mat_file:
             return {}

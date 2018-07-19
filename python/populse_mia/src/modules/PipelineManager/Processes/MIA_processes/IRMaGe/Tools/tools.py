@@ -1,8 +1,11 @@
+import os
+
 # Trait import
 from nipype.interfaces.base import traits
 
 # MIA import
 from PipelineManager.Process_mia import Process_mia
+from Project.Filter import Filter
 
 
 class Duplicate_File(Process_mia):
@@ -21,6 +24,7 @@ class Duplicate_File(Process_mia):
         self.add_trait("out_file2", traits.File(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         if not self.file1 or self.file1 in ["<undefined>", traits.Undefined]:
             return {}, {}
         return {"out_file1": self.file1, "out_file2": self.file1}, {}
@@ -46,6 +50,7 @@ class Find_In_List(Process_mia):
         self.add_trait("out_file", traits.File(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         if not self.in_list or self.in_list in ["<undefined>", traits.Undefined]:
             return {}, {}
         for file in self.in_list:
@@ -78,6 +83,7 @@ class Files_To_List(Process_mia):
         self.add_trait("file_list", traits.List(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         out_list = [self.file1, self.file2]
         return {'file_list': out_list}, {}
 
@@ -102,6 +108,7 @@ class List_Duplicate(Process_mia):
         self.add_trait("out_list", traits.List(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         return {"out_list": [self.file_name], "out_file": self.file_name}, {}
 
     def _run_process(self):
@@ -125,6 +132,7 @@ class ROI_List_Generator(Process_mia):
         self.add_trait("roi_list", traits.List(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         out_list = []
         for elm_pos in self.pos:
             for elm_hemi in self.hemi:
@@ -140,10 +148,9 @@ class ROI_List_Generator(Process_mia):
         self.roi_list = out_list
 
 
-"""
 class Populse_Filter(Process_mia):
 
-    def __init__(self, scans_list):
+    def __init__(self, scans_list=None):
         super(Populse_Filter, self).__init__()
 
         if scans_list:
@@ -153,19 +160,19 @@ class Populse_Filter(Process_mia):
         self.filter = Filter(None, [], [], [], [], [], "")
 
         self.add_trait("input", traits.List(traits.File, output=False))
-        #self.add_trait("input", traits.Either(traits.List(File(exists=True)), File(exists=True), output=False))
         self.add_trait("output", traits.List(traits.File, output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
+        # TODO: MAYBE WE DON'T NEED THAT, IT SHOULD BE DONE IN open_filter OF PipelineEditor
         if self.input:
             self.scans_list = self.input
         else:
             self.scans_list = self.project.database.get_documents_names()
 
         filt = self.filter
-        output = self.database.get_documents_matching_advanced_search(filt.links, filt.fields, filt.conditions,
-                                                                      filt.values, filt.nots,
-                                                                      self.scans_list)
+        output = []
+        #TODO: write output
         for idx, element in enumerate(output):
             full_path = os.path.join(self.project.folder, element)
             output[idx] = full_path
@@ -189,7 +196,6 @@ class Populse_Filter(Process_mia):
             output[idx] = full_path
 
         self.output = output
-"""
 
 
 class Test_Bug(Process_mia):
@@ -207,6 +213,7 @@ class Test_Bug(Process_mia):
         self.add_trait("out_file2", traits.File(output=True))
 
     def list_outputs(self):
+        Process_mia.list_outputs(self)
         return {"out_file1": self.out_file1, "out_file2": "/tmp/test.txt"}, {}
 
     def _run_process(self):
