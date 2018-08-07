@@ -148,10 +148,10 @@ class ROI_List_Generator(Process_mia):
         self.roi_list = out_list
 
 
-class Populse_Filter(Process_mia):
+class Input_Filter(Process_mia):
 
     def __init__(self):
-        super(Populse_Filter, self).__init__()
+        super(Input_Filter, self).__init__()
 
         """if scans_list:
             self.scans_list = scans_list
