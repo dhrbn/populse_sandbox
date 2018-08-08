@@ -153,11 +153,7 @@ class Input_Filter(Process_mia):
     def __init__(self):
         super(Input_Filter, self).__init__()
 
-        """if scans_list:
-            self.scans_list = scans_list
-        else:
-            self.scans_list = self.project.database.get_documents_names()"""
-        self.filter = Filter(None, [], [], [], [], [], "")
+        self.filter = Filter(None, [''], [''], [['FileName']], [], ['CONTAINS'], "")
 
         self.add_trait("input", traits.List(traits.File, output=False))
         self.add_trait("output", traits.List(traits.File, output=True))
