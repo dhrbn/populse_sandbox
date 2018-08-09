@@ -203,8 +203,10 @@ class Normalize(Process_mia):
         # Inputs
         # self.add_trait("apply_to_files", InputMultiPath(traits.Either(
         #    ImageFileSPM(exists=True), traits.List(ImageFileSPM(exists=True)), output=False)))
+
         self.add_trait("apply_to_files", InputMultiPath(traits.Either(
             ImageFileSPM(), traits.List(ImageFileSPM()), output=False)))
+
         self.add_trait("deformation_file", ImageFileSPM(output=False))
 
         """self.add_trait("jobtype", traits.Enum('write', 'est', 'estwrite',
